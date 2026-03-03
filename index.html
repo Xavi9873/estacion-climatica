@@ -23,13 +23,6 @@
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        h1 span {
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 50px;
-            font-size: 0.5em;
-            vertical-align: middle;
-        }
         .actual {
             background: white;
             border-radius: 20px;
@@ -71,87 +64,31 @@
             margin-top: 10px;
             opacity: 0.9;
         }
-        .grafica-container {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        canvas {
-            width: 100%;
-            height: 400px;
-        }
         .actualizado {
             text-align: center;
             margin-top: 20px;
             color: #666;
             font-style: italic;
         }
-        .selector-dias {
-            display: flex;
-            gap: 10px;
+        .error {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
             margin-bottom: 20px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        .btn-dia {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            background: #1e3c72;
-            color: white;
-            cursor: pointer;
-            font-size: 1em;
-            transition: all 0.3s;
-        }
-        .btn-dia:hover {
-            background: #2a5298;
-            transform: scale(1.05);
-        }
-        .btn-dia.activo {
-            background: #2a5298;
-            box-shadow: 0 0 15px rgba(42, 82, 152, 0.5);
-        }
-        .estadisticas {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .stat-valor {
-            font-size: 1.8em;
-            font-weight: bold;
-        }
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
-        }
-        .footer {
-            text-align: center;
-            color: white;
-            margin-top: 30px;
-            opacity: 0.8;
         }
     </style>
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>🌡️ ESTACIÓN CLIMÁTICA <span>v1.0</span></h1>
+        <h1>🌡️ ESTACIÓN CLIMÁTICA</h1>
         
-        <!-- Tarjetas de lecturas actuales -->
+        <div id="error-message" class="error" style="display: none;"></div>
+        
         <div class="actual">
             <h2>📊 LECTURAS EN TIEMPO REAL</h2>
             <div class="lecturas">
@@ -167,62 +104,20 @@
                 </div>
             </div>
             <div class="actualizado" id="ultima-actualizacion">
-                ⏳ Esperando datos del ESP32...
+                ⏳ Esperando datos...
             </div>
         </div>
 
-        <!-- Selector de días y gráfica -->
-        <div class="grafica-container">
-            <h2>📈 HISTÓRICO DE LECTURAS</h2>
-            <div class="selector-dias">
-                <button class="btn-dia" onclick="cargarDias(1)">1 Día</button>
-                <button class="btn-dia" onclick="cargarDias(3)">3 Días</button>
-                <button class="btn-dia activo" onclick="cargarDias(7)">7 Días</button>
-                <button class="btn-dia" onclick="cargarDias(15)">15 Días</button>
-                <button class="btn-dia" onclick="cargarDias(30)">30 Días</button>
+        <div class="actual">
+            <h2>📋 ÚLTIMAS 5 LECTURAS</h2>
+            <div id="historial">
+                <p>Cargando historial...</p>
             </div>
-            <canvas id="grafica"></canvas>
-        </div>
-
-        <!-- Estadísticas -->
-        <div class="grafica-container">
-            <h2>📊 ESTADÍSTICAS DEL PERÍODO</h2>
-            <div class="estadisticas" id="estadisticas">
-                <div class="stat-card">
-                    <div class="stat-valor" id="temp-max">--</div>
-                    <div class="stat-label">Temperatura Máxima</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-valor" id="temp-min">--</div>
-                    <div class="stat-label">Temperatura Mínima</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-valor" id="temp-prom">--</div>
-                    <div class="stat-label">Temperatura Promedio</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-valor" id="hum-max">--</div>
-                    <div class="stat-label">Humedad Máxima</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-valor" id="hum-min">--</div>
-                    <div class="stat-label">Humedad Mínima</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-valor" id="hum-prom">--</div>
-                    <div class="stat-label">Humedad Promedio</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="footer">
-            🌐 Accesible desde cualquier lugar | Datos actualizados cada minuto
         </div>
     </div>
 
     <script>
         // ===== CONFIGURACIÓN DE FIREBASE =====
-        // ¡TUS DATOS REALES!
         const firebaseConfig = {
             apiKey: "AIzaSyD_TJ1TZHviv7940B-rN0tWjPRRCqr-NbQ",
             authDomain: "estacion-climatica.firebaseapp.com",
@@ -234,94 +129,20 @@
         };
 
         // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("✅ Firebase inicializado");
+        } catch (error) {
+            console.error("❌ Error inicializando Firebase:", error);
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').textContent = 'Error conectando a Firebase: ' + error.message;
+        }
+
         const database = firebase.database();
 
-        // ===== CONFIGURACIÓN DE LA GRÁFICA =====
-        const ctx = document.getElementById('grafica').getContext('2d');
-        const grafica = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: [],
-                datasets: [
-                    {
-                        label: 'Temperatura (°C)',
-                        data: [],
-                        borderColor: '#ff6b6b',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Humedad (%)',
-                        data: [],
-                        borderColor: '#4ecdc4',
-                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: { usePointStyle: true }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) label += ': ';
-                                if (context.parsed.y !== null) {
-                                    label += context.parsed.y.toFixed(1);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        type: 'linear',
-                        display: true,
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'Temperatura (°C)'
-                        },
-                        grid: { color: 'rgba(0,0,0,0.1)' }
-                    },
-                    y1: {
-                        type: 'linear',
-                        display: true,
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Humedad (%)'
-                        },
-                        min: 0,
-                        max: 100,
-                        grid: { drawOnChartArea: false },
-                        ticks: { callback: value => value + '%' }
-                    }
-                }
-            }
-        });
-
-        // ===== FUNCIONES =====
+        // ===== FUNCIÓN PARA FORMATEAR FECHA =====
         function formatearFecha(timestamp) {
+            if (!timestamp) return 'Fecha desconocida';
             const fecha = new Date(timestamp * 1000);
             return fecha.toLocaleString('es-MX', { 
                 day: '2-digit', 
@@ -331,135 +152,82 @@
             });
         }
 
-        function actualizarEstadisticas(datos) {
-            if (datos.length === 0) return;
+        // ===== ESCUCHAR CAMBIOS EN /actual =====
+        function escucharActual() {
+            const actualRef = database.ref('/actual');
             
-            let tempMax = -999, tempMin = 999, tempSum = 0;
-            let humMax = -999, humMin = 999, humSum = 0;
-            
-            datos.forEach(d => {
-                tempMax = Math.max(tempMax, d.temperatura);
-                tempMin = Math.min(tempMin, d.temperatura);
-                tempSum += d.temperatura;
-                
-                humMax = Math.max(humMax, d.humedad);
-                humMin = Math.min(humMin, d.humedad);
-                humSum += d.humedad;
-            });
-            
-            document.getElementById('temp-max').textContent = tempMax.toFixed(1) + '°C';
-            document.getElementById('temp-min').textContent = tempMin.toFixed(1) + '°C';
-            document.getElementById('temp-prom').textContent = (tempSum / datos.length).toFixed(1) + '°C';
-            document.getElementById('hum-max').textContent = humMax.toFixed(1) + '%';
-            document.getElementById('hum-min').textContent = humMin.toFixed(1) + '%';
-            document.getElementById('hum-prom').textContent = (humSum / datos.length).toFixed(1) + '%';
-        }
-
-        function cargarDias(dias) {
-            // Actualizar botones
-            document.querySelectorAll('.btn-dia').forEach(btn => {
-                btn.classList.remove('activo');
-            });
-            event.target.classList.add('activo');
-            
-            const ahora = Math.floor(Date.now() / 1000);
-            const haceDias = ahora - (dias * 24 * 60 * 60);
-            
-            database.ref('/lecturas')
-                .orderByKey()
-                .startAt(String(haceDias))
-                .once('value', (snapshot) => {
-                    const datos = [];
-                    snapshot.forEach((child) => {
-                        datos.push(child.val());
-                    });
-                    
-                    if (datos.length === 0) {
-                        console.log('No hay datos para este período');
-                        return;
-                    }
-                    
-                    datos.sort((a, b) => a.timestamp - b.timestamp);
-                    
-                    const labels = datos.map(d => {
-                        const fecha = new Date(d.timestamp * 1000);
-                        return fecha.getDate() + '/' + (fecha.getMonth()+1) + ' ' + 
-                               fecha.getHours() + ':' + String(fecha.getMinutes()).padStart(2, '0');
-                    });
-                    
-                    const temperaturas = datos.map(d => d.temperatura);
-                    const humedades = datos.map(d => d.humedad);
-                    
-                    grafica.data.labels = labels;
-                    grafica.data.datasets[0].data = temperaturas;
-                    grafica.data.datasets[1].data = humedades;
-                    grafica.update();
-                    
-                    actualizarEstadisticas(datos);
-                });
-        }
-
-        // ===== INICIAR ESCUCHA EN TIEMPO REAL =====
-        function iniciar() {
-            console.log('🚀 Iniciando Estación Climática...');
-            
-            // Escuchar cambios en la lectura actual
-            database.ref('/actual').on('value', (snapshot) => {
+            actualRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                if (data) {
-                    document.getElementById('temp-actual').textContent = data.temperatura.toFixed(1);
-                    document.getElementById('hum-actual').textContent = data.humedad.toFixed(1);
-                    
-                    const fecha = new Date(data.timestamp * 1000);
-                    document.getElementById('ultima-actualizacion').innerHTML = 
-                        `🕒 Última actualización: ${fecha.toLocaleString('es-MX')}`;
-                    
-                    console.log('📡 Lectura actual recibida:', data);
-                }
-            });
-            
-            // Cargar últimos 7 días al inicio
-            setTimeout(() => {
-                const ahora = Math.floor(Date.now() / 1000);
-                const hace7Dias = ahora - (7 * 24 * 60 * 60);
+                console.log("📡 Datos de /actual:", data);
                 
-                database.ref('/lecturas')
-                    .orderByKey()
-                    .startAt(String(hace7Dias))
-                    .once('value', (snapshot) => {
-                        const datos = [];
-                        snapshot.forEach((child) => {
-                            datos.push(child.val());
-                        });
-                        
-                        if (datos.length === 0) {
-                            console.log('⏳ No hay datos históricos aún');
-                            return;
-                        }
-                        
-                        datos.sort((a, b) => a.timestamp - b.timestamp);
-                        
-                        const labels = datos.map(d => {
-                            const fecha = new Date(d.timestamp * 1000);
-                            return fecha.getHours() + ':' + String(fecha.getMinutes()).padStart(2, '0');
-                        });
-                        
-                        const temperaturas = datos.map(d => d.temperatura);
-                        const humedades = datos.map(d => d.humedad);
-                        
-                        grafica.data.labels = labels;
-                        grafica.data.datasets[0].data = temperaturas;
-                        grafica.data.datasets[1].data = humedades;
-                        grafica.update();
-                        
-                        actualizarEstadisticas(datos);
-                        console.log(`✅ Cargadas ${datos.length} lecturas históricas`);
-                    });
-            }, 2000);
+                if (data) {
+                    document.getElementById('temp-actual').textContent = data.temperatura ? data.temperatura.toFixed(1) : '--';
+                    document.getElementById('hum-actual').textContent = data.humedad ? data.humedad.toFixed(1) : '--';
+                    
+                    if (data.timestamp) {
+                        document.getElementById('ultima-actualizacion').innerHTML = 
+                            `🕒 Última actualización: ${formatearFecha(data.timestamp)}`;
+                    }
+                } else {
+                    console.log("⚠️ No hay datos en /actual");
+                    document.getElementById('ultima-actualizacion').innerHTML = '⏳ Esperando primera lectura...';
+                }
+            }, (error) => {
+                console.error("❌ Error leyendo /actual:", error);
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').textContent = 'Error leyendo datos: ' + error.message;
+            });
         }
 
-        // Iniciar cuando cargue la página
-        window.onload = iniciar;
+        // ===== CARGAR HISTORIAL =====
+        function cargarHistorial() {
+            const historialRef = database.ref('/lecturas');
+            
+            historialRef.limitToLast(5).on('value', (snapshot) => {
+                const data = snapshot.val();
+                console.log("📡 Datos de /lecturas:", data);
+                
+                const historialDiv = document.getElementById('historial');
+                
+                if (!data) {
+                    historialDiv.innerHTML = '<p>No hay lecturas en el historial</p>';
+                    return;
+                }
+                
+                let html = '<table style="width:100%; border-collapse: collapse;">';
+                html += '<tr><th>Fecha</th><th>Temperatura</th><th>Humedad</th></tr>';
+                
+                // Convertir objeto a array y ordenar por timestamp
+                const lecturas = Object.values(data);
+                lecturas.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                
+                lecturas.slice(0, 5).forEach(lectura => {
+                    if (lectura && lectura.temperatura && lectura.humedad) {
+                        html += '<tr>';
+                        html += `<td>${formatearFecha(lectura.timestamp)}</td>`;
+                        html += `<td>${lectura.temperatura.toFixed(1)} °C</td>`;
+                        html += `<td>${lectura.humedad.toFixed(1)} %</td>`;
+                        html += '</tr>';
+                    }
+                });
+                
+                html += '</table>';
+                historialDiv.innerHTML = html;
+                
+            }, (error) => {
+                console.error("❌ Error leyendo /lecturas:", error);
+                document.getElementById('historial').innerHTML = '<p>Error cargando historial</p>';
+            });
+        }
+
+        // ===== INICIAR =====
+        window.onload = function() {
+            console.log("🚀 Iniciando aplicación...");
+            escucharActual();
+            cargarHistorial();
+        };
     </script>
 </body>
+</html>
+
 </html>
