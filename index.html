@@ -73,19 +73,37 @@
         .error {
             background: #ff6b6b;
             color: white;
-            padding: 10px;
+            padding: 15px;
             border-radius: 10px;
             text-align: center;
             margin-bottom: 20px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
         }
     </style>
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+    <!-- Firebase SDK (versiones CORRECTAS y actualizadas) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>🌡️ ESTACIÓN CLIMÁTICA</h1>
+        <h1>🌡️ ESTACIÓN CLIMÁTICA ESP32</h1>
         
         <div id="error-message" class="error" style="display: none;"></div>
         
@@ -104,14 +122,14 @@
                 </div>
             </div>
             <div class="actualizado" id="ultima-actualizacion">
-                ⏳ Esperando datos...
+                ⏳ Esperando datos del ESP32...
             </div>
         </div>
 
         <div class="actual">
-            <h2>📋 ÚLTIMAS 5 LECTURAS</h2>
+            <h2>📋 ÚLTIMAS 10 LECTURAS</h2>
             <div id="historial">
-                <p>Cargando historial...</p>
+                <p style="text-align: center;">Cargando historial...</p>
             </div>
         </div>
     </div>
@@ -128,37 +146,45 @@
             appId: "1:845198169682:web:fbce6efdf2e5b7c38eb18b"
         };
 
-        // Inicializar Firebase
+        // Función para mostrar errores
+        function mostrarError(mensaje) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = '❌ ' + mensaje;
+            console.error(mensaje);
+        }
+
+        // ===== INICIALIZAR FIREBASE =====
         try {
+            // Verificar que Firebase esté disponible
+            if (typeof firebase === 'undefined') {
+                throw new Error('Las librerías de Firebase no se cargaron. Verifica tu conexión a internet.');
+            }
+
+            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
-            console.log("✅ Firebase inicializado");
-        } catch (error) {
-            console.error("❌ Error inicializando Firebase:", error);
-            document.getElementById('error-message').style.display = 'block';
-            document.getElementById('error-message').textContent = 'Error conectando a Firebase: ' + error.message;
-        }
+            console.log('✅ Firebase inicializado correctamente');
+            
+            const database = firebase.database();
 
-        const database = firebase.database();
+            // ===== FUNCIÓN PARA FORMATEAR FECHA =====
+            function formatearFecha(timestamp) {
+                if (!timestamp) return 'Fecha desconocida';
+                const fecha = new Date(timestamp * 1000);
+                return fecha.toLocaleString('es-MX', { 
+                    day: '2-digit', 
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
 
-        // ===== FUNCIÓN PARA FORMATEAR FECHA =====
-        function formatearFecha(timestamp) {
-            if (!timestamp) return 'Fecha desconocida';
-            const fecha = new Date(timestamp * 1000);
-            return fecha.toLocaleString('es-MX', { 
-                day: '2-digit', 
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        // ===== ESCUCHAR CAMBIOS EN /actual =====
-        function escucharActual() {
+            // ===== ESCUCHAR CAMBIOS EN /actual =====
             const actualRef = database.ref('/actual');
             
             actualRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log("📡 Datos de /actual:", data);
+                console.log('📡 Datos de /actual:', data);
                 
                 if (data) {
                     document.getElementById('temp-actual').textContent = data.temperatura ? data.temperatura.toFixed(1) : '--';
@@ -169,39 +195,38 @@
                             `🕒 Última actualización: ${formatearFecha(data.timestamp)}`;
                     }
                 } else {
-                    console.log("⚠️ No hay datos en /actual");
-                    document.getElementById('ultima-actualizacion').innerHTML = '⏳ Esperando primera lectura...';
+                    document.getElementById('ultima-actualizacion').innerHTML = '⏳ Esperando primera lectura del ESP32...';
                 }
             }, (error) => {
-                console.error("❌ Error leyendo /actual:", error);
-                document.getElementById('error-message').style.display = 'block';
-                document.getElementById('error-message').textContent = 'Error leyendo datos: ' + error.message;
+                mostrarError('Error leyendo datos actuales: ' + error.message);
             });
-        }
 
-        // ===== CARGAR HISTORIAL =====
-        function cargarHistorial() {
+            // ===== CARGAR HISTORIAL =====
             const historialRef = database.ref('/lecturas');
             
-            historialRef.limitToLast(5).on('value', (snapshot) => {
+            historialRef.limitToLast(10).on('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log("📡 Datos de /lecturas:", data);
+                console.log('📡 Datos de /lecturas:', data);
                 
                 const historialDiv = document.getElementById('historial');
                 
                 if (!data) {
-                    historialDiv.innerHTML = '<p>No hay lecturas en el historial</p>';
+                    historialDiv.innerHTML = '<p style="text-align: center;">No hay lecturas en el historial</p>';
                     return;
                 }
                 
-                let html = '<table style="width:100%; border-collapse: collapse;">';
-                html += '<tr><th>Fecha</th><th>Temperatura</th><th>Humedad</th></tr>';
+                // Convertir objeto a array y ordenar
+                const lecturas = Object.entries(data).map(([key, value]) => ({
+                    id: key,
+                    ...value
+                }));
                 
-                // Convertir objeto a array y ordenar por timestamp
-                const lecturas = Object.values(data);
                 lecturas.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 
-                lecturas.slice(0, 5).forEach(lectura => {
+                let html = '<table>';
+                html += '<tr><th>Fecha</th><th>Temperatura</th><th>Humedad</th></tr>';
+                
+                lecturas.slice(0, 10).forEach(lectura => {
                     if (lectura && lectura.temperatura && lectura.humedad) {
                         html += '<tr>';
                         html += `<td>${formatearFecha(lectura.timestamp)}</td>`;
@@ -215,19 +240,18 @@
                 historialDiv.innerHTML = html;
                 
             }, (error) => {
-                console.error("❌ Error leyendo /lecturas:", error);
-                document.getElementById('historial').innerHTML = '<p>Error cargando historial</p>';
+                mostrarError('Error cargando historial: ' + error.message);
+                historialDiv.innerHTML = '<p style="text-align: center; color: red;">Error cargando historial</p>';
             });
+
+        } catch (error) {
+            mostrarError('Error al inicializar: ' + error.message);
         }
 
-        // ===== INICIAR =====
-        window.onload = function() {
-            console.log("🚀 Iniciando aplicación...");
-            escucharActual();
-            cargarHistorial();
-        };
+        // Verificar conexión a internet
+        if (!navigator.onLine) {
+            mostrarError('No hay conexión a internet');
+        }
     </script>
 </body>
-</html>
-
 </html>
