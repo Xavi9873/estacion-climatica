@@ -79,6 +79,14 @@
             margin-bottom: 20px;
             font-weight: bold;
         }
+        .success {
+            background: #51cf66;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -97,7 +105,7 @@
             background: #f5f5f5;
         }
     </style>
-    <!-- Firebase SDK (versiones CORRECTAS y actualizadas) -->
+    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
@@ -106,6 +114,7 @@
         <h1>🌡️ ESTACIÓN CLIMÁTICA ESP32</h1>
         
         <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
         
         <div class="actual">
             <h2>📊 LECTURAS EN TIEMPO REAL</h2>
@@ -127,7 +136,7 @@
         </div>
 
         <div class="actual">
-            <h2>📋 ÚLTIMAS 10 LECTURAS</h2>
+            <h2>📋 ÚLTIMAS LECTURAS</h2>
             <div id="historial">
                 <p style="text-align: center;">Cargando historial...</p>
             </div>
@@ -146,7 +155,6 @@
             appId: "1:845198169682:web:fbce6efdf2e5b7c38eb18b"
         };
 
-        // Función para mostrar errores
         function mostrarError(mensaje) {
             const errorDiv = document.getElementById('error-message');
             errorDiv.style.display = 'block';
@@ -154,59 +162,64 @@
             console.error(mensaje);
         }
 
-        // ===== INICIALIZAR FIREBASE =====
+        function mostrarExito(mensaje) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.style.display = 'block';
+            successDiv.textContent = '✅ ' + mensaje;
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function formatearFecha(timestamp) {
+            if (!timestamp) return 'Fecha desconocida';
+            const fecha = new Date(timestamp * 1000);
+            return fecha.toLocaleString('es-MX', { 
+                day: '2-digit', 
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Inicializar Firebase
         try {
-            // Verificar que Firebase esté disponible
             if (typeof firebase === 'undefined') {
-                throw new Error('Las librerías de Firebase no se cargaron. Verifica tu conexión a internet.');
+                throw new Error('Las librerías de Firebase no se cargaron');
             }
 
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
-            console.log('✅ Firebase inicializado correctamente');
+            console.log('✅ Firebase inicializado');
             
             const database = firebase.database();
 
-            // ===== FUNCIÓN PARA FORMATEAR FECHA =====
-            function formatearFecha(timestamp) {
-                if (!timestamp) return 'Fecha desconocida';
-                const fecha = new Date(timestamp * 1000);
-                return fecha.toLocaleString('es-MX', { 
-                    day: '2-digit', 
-                    month: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            }
-
-            // ===== ESCUCHAR CAMBIOS EN /actual =====
+            // ===== LECTURA ACTUAL =====
             const actualRef = database.ref('/actual');
             
             actualRef.on('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log('📡 Datos de /actual:', data);
+                console.log('📡 Actual:', data);
                 
                 if (data) {
-                    document.getElementById('temp-actual').textContent = data.temperatura ? data.temperatura.toFixed(1) : '--';
-                    document.getElementById('hum-actual').textContent = data.humedad ? data.humedad.toFixed(1) : '--';
+                    document.getElementById('temp-actual').textContent = data.temperatura?.toFixed(1) || '--';
+                    document.getElementById('hum-actual').textContent = data.humedad?.toFixed(1) || '--';
                     
                     if (data.timestamp) {
                         document.getElementById('ultima-actualizacion').innerHTML = 
                             `🕒 Última actualización: ${formatearFecha(data.timestamp)}`;
                     }
-                } else {
-                    document.getElementById('ultima-actualizacion').innerHTML = '⏳ Esperando primera lectura del ESP32...';
+                    mostrarExito('Datos actualizados');
                 }
             }, (error) => {
                 mostrarError('Error leyendo datos actuales: ' + error.message);
             });
 
-            // ===== CARGAR HISTORIAL =====
+            // ===== HISTORIAL =====
             const historialRef = database.ref('/lecturas');
             
-            historialRef.limitToLast(10).on('value', (snapshot) => {
+            historialRef.limitToLast(20).on('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log('📡 Datos de /lecturas:', data);
+                console.log('📡 Historial:', data);
                 
                 const historialDiv = document.getElementById('historial');
                 
@@ -215,7 +228,7 @@
                     return;
                 }
                 
-                // Convertir objeto a array y ordenar
+                // Convertir a array y ordenar
                 const lecturas = Object.entries(data).map(([key, value]) => ({
                     id: key,
                     ...value
@@ -226,7 +239,7 @@
                 let html = '<table>';
                 html += '<tr><th>Fecha</th><th>Temperatura</th><th>Humedad</th></tr>';
                 
-                lecturas.slice(0, 10).forEach(lectura => {
+                lecturas.slice(0, 15).forEach(lectura => {
                     if (lectura && lectura.temperatura && lectura.humedad) {
                         html += '<tr>';
                         html += `<td>${formatearFecha(lectura.timestamp)}</td>`;
@@ -238,19 +251,15 @@
                 
                 html += '</table>';
                 historialDiv.innerHTML = html;
+                mostrarExito('Historial cargado');
                 
             }, (error) => {
                 mostrarError('Error cargando historial: ' + error.message);
-                historialDiv.innerHTML = '<p style="text-align: center; color: red;">Error cargando historial</p>';
+                historialDiv.innerHTML = '<p style="text-align: center; color: red;">Error: ' + error.message + '</p>';
             });
 
         } catch (error) {
             mostrarError('Error al inicializar: ' + error.message);
-        }
-
-        // Verificar conexión a internet
-        if (!navigator.onLine) {
-            mostrarError('No hay conexión a internet');
         }
     </script>
 </body>
