@@ -3,176 +3,437 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estación Climática ESP32</title>
-    <!-- Font Awesome -->
+    <title>WeatherStation ESP32 · Clima CETYS</title>
+    
+    <!-- Font Awesome 6 (iconos) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Chart.js -->
+    
+    <!-- Chart.js 4 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Firebase -->
+    
+    <!-- Firebase 8 (compatible) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <!-- Google Fonts (tipografía limpia) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: #0B1120;  /* Fondo oscuro elegante */
             min-height: 100vh;
-            padding: 20px;
-            font-family: 'Segoe UI', sans-serif;
+            padding: 24px 20px;
+            color: #fff;
         }
-        .container { max-width: 1400px; margin: 0 auto; }
-        
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER CON EFECTO GLASS ===== */
         .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 24px 32px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-        h1 { font-size: 2.5em; margin-bottom: 10px; }
-        
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #A7C0FF, #6C8CFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header h1 i {
+            margin-right: 12px;
+            color: #6C8CFF;
+            -webkit-text-fill-color: initial;
+        }
+
+        .weather-badge {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .badge-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 40px;
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.95rem;
+        }
+
+        .badge-item i {
+            color: #6C8CFF;
+            margin-right: 8px;
+        }
+
+        /* ===== TARJETAS PRINCIPALES (VIDRIO) ===== */
         .current-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 24px;
+            margin-bottom: 32px;
         }
-        
+
         .card {
-            border-radius: 20px;
-            padding: 25px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 40px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .card.temperatura { background: linear-gradient(135deg, #ff6b6b, #ff8e8e); }
-        .card.humedad { background: linear-gradient(135deg, #4ecdc4, #45b7af); }
-        
-        .card-icon { font-size: 2.5em; text-align: center; margin-bottom: 10px; }
-        .card-label { text-align: center; font-size: 1.1em; text-transform: uppercase; margin-bottom: 10px; }
-        .card-value { font-size: 4em; font-weight: bold; text-align: center; line-height: 1; }
-        .card-unit { text-align: center; font-size: 0.9em; opacity: 0.9; margin-top: 5px; }
-        .timestamp { text-align: center; font-size: 0.8em; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50px; margin-top: 15px; }
-        
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.3), transparent);
+            pointer-events: none;
+        }
+
+        .card.temperatura {
+            background: linear-gradient(145deg, #2B1A3D, #1A1F35);
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.2);
+        }
+
+        .card.humedad {
+            background: linear-gradient(145deg, #1A2F3D, #1A2835);
+            box-shadow: 0 20px 40px rgba(78, 205, 196, 0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-label {
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-value {
+            font-size: 5.5rem;
+            font-weight: 700;
+            line-height: 1;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .card-unit {
+            font-size: 1.5rem;
+            font-weight: 400;
+            opacity: 0.6;
+            margin-left: 8px;
+        }
+
+        .timestamp {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 16px;
+            border-radius: 60px;
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+        }
+
+        /* ===== SELECTOR DE PERÍODOS (NUEVO: 6h, 12h, Hoy, Semana) ===== */
         .period-selector {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
+
         .period-btn {
-            padding: 10px 25px;
+            padding: 14px 28px;
             border: none;
-            border-radius: 25px;
-            background: white;
-            cursor: pointer;
+            border-radius: 60px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
             font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            letter-spacing: 0.3px;
         }
-        .period-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
-        .period-btn.active { background: #667eea; color: white; }
-        
+
+        .period-btn i {
+            margin-right: 8px;
+            opacity: 0.8;
+        }
+
+        .period-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255,  255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .period-btn.active {
+            background: linear-gradient(135deg, #6C8CFF, #8A6CFF);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
+        }
+
+        /* ===== GRÁFICAS ===== */
         .charts-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 24px;
+            margin-bottom: 32px;
         }
-        
+
         .chart-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            height: 400px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
         }
-        
+
         .chart-title {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f0f0f0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        .chart-title.temp { color: #ff6b6b; }
-        .chart-title.hum { color: #4ecdc4; }
-        
-        .chart-wrapper { position: relative; height: calc(100% - 50px); width: 100%; }
-        
+
+        .chart-title.temp { color: #FF8A8A; }
+        .chart-title.hum { color: #7FE0D9; }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        /* ===== TARJETA DE PROMEDIOS DIARIOS (MEJORADA) ===== */
         .daily-stats {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 32px;
         }
-        .daily-stats h2 { color: #333; margin-bottom: 20px; }
-        
+
+        .daily-stats h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .daily-stats h2 i {
+            color: #6C8CFF;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 20px;
         }
-        
+
         .stat-card {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 15px;
-            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 32px;
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             text-align: center;
+            transition: 0.3s;
         }
-        .stat-icon { font-size: 2em; margin-bottom: 10px; }
-        .stat-icon.temp { color: #ff6b6b; }
-        .stat-icon.hum { color: #4ecdc4; }
-        .stat-label { color: #666; font-size: 0.9em; margin-bottom: 10px; }
-        .stat-value { font-size: 2em; font-weight: bold; color: #333; }
-        .stat-unit { font-size: 0.9em; color: #999; margin-left: 5px; }
-        
-        .footer { text-align: center; margin-top: 30px; color: rgba(255,255,255,0.8); }
-        
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .stat-icon.temp { color: #FF8A8A; }
+        .stat-icon.hum { color: #7FE0D9; }
+
+        .stat-label {
+            font-size: 0.95rem;
+            opacity: 0.7;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-unit {
+            font-size: 1.2rem;
+            font-weight: 400;
+            opacity: 0.6;
+            margin-left: 5px;
+        }
+
+        /* ===== FOOTER ACTUALIZADO ===== */
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 60px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .footer i {
+            color: #6C8CFF;
+            margin: 0 6px;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            .current-grid, .charts-grid, .stats-grid { grid-template-columns: 1fr; }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .current-grid, .charts-grid, .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .card-value {
+                font-size: 4rem;
+            }
+            .period-btn {
+                padding: 12px 20px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card-value {
+                font-size: 3.2rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- HEADER MÁS ATRACTIVO -->
         <div class="header">
-            <h1><i class="fas fa-microchip"></i> ESTACIÓN CLIMÁTICA ESP32</h1>
+            <h1>
+                <i class="fas fa-cloud-sun"></i> CETYS Weather Station
+            </h1>
+            <div class="weather-badge">
+                <div class="badge-item">
+                    <i class="fas fa-wifi"></i> ESP32 · CETYS
+                </div>
+                <div class="badge-item">
+                    <i class="fas fa-database"></i> Firebase
+                </div>
+            </div>
         </div>
 
+        <!-- TARJETAS DE LECTURAS ACTUALES -->
         <div class="current-grid">
             <div class="card temperatura">
                 <div class="card-icon"><i class="fas fa-thermometer-half"></i></div>
-                <div class="card-label">TEMPERATURA</div>
-                <div class="card-value" id="temp-valor">--</div>
-                <div class="card-unit">°C</div>
+                <div class="card-label">Temperatura</div>
+                <div class="card-value" id="temp-valor">--<span class="card-unit">°C</span></div>
                 <div class="timestamp" id="temp-timestamp"><i class="far fa-clock"></i> --</div>
             </div>
             <div class="card humedad">
-                <div class="card-icon"><i class="fas fa-tint"></i></div>
-                <div class="card-label">HUMEDAD</div>
-                <div class="card-value" id="hum-valor">--</div>
-                <div class="card-unit">%</div>
+                <div class="card-icon"><i class="fas fa-droplet"></i></div>
+                <div class="card-label">Humedad</div>
+                <div class="card-value" id="hum-valor">--<span class="card-unit">%</span></div>
                 <div class="timestamp" id="hum-timestamp"><i class="far fa-clock"></i> --</div>
             </div>
         </div>
 
+        <!-- NUEVOS BOTONES: 6h, 12h, Hoy, Semana -->
         <div class="period-selector">
-            <button class="period-btn active" onclick="cambiarPeriodo(24)">24 HORAS</button>
-            <button class="period-btn" onclick="cambiarPeriodo(72)">3 DÍAS</button>
-            <button class="period-btn" onclick="cambiarPeriodo(168)">7 DÍAS</button>
-            <button class="period-btn" onclick="cambiarPeriodo(720)">30 DÍAS</button>
+            <button class="period-btn" onclick="cambiarPeriodo(6, '6 HORAS')">
+                <i class="fas fa-hourglass-start"></i> 6 HORAS
+            </button>
+            <button class="period-btn" onclick="cambiarPeriodo(12, '12 HORAS')">
+                <i class="fas fa-hourglass-half"></i> 12 HORAS
+            </button>
+            <button class="period-btn active" onclick="cambiarPeriodo(24, 'HOY')">
+                <i class="fas fa-sun"></i> HOY
+            </button>
+            <button class="period-btn" onclick="cambiarPeriodo(168, 'SEMANA')">
+                <i class="fas fa-calendar-week"></i> SEMANA
+            </button>
         </div>
 
+        <!-- GRÁFICAS -->
         <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-title temp"><i class="fas fa-thermometer-half"></i> Temperatura (°C)</div>
-                <div class="chart-wrapper"><canvas id="grafica-temp"></canvas></div>
+                <div class="chart-wrapper">
+                    <canvas id="grafica-temp"></canvas>
+                </div>
             </div>
             <div class="chart-card">
-                <div class="chart-title hum"><i class="fas fa-tint"></i> Humedad (%)</div>
-                <div class="chart-wrapper"><canvas id="grafica-hum"></canvas></div>
+                <div class="chart-title hum"><i class="fas fa-droplet"></i> Humedad (%)</div>
+                <div class="chart-wrapper">
+                    <canvas id="grafica-hum"></canvas>
+                </div>
             </div>
         </div>
 
+        <!-- PROMEDIOS DEL DÍA -->
         <div class="daily-stats">
-            <h2><i class="fas fa-calendar-day"></i> Promedios del Día</h2>
+            <h2><i class="fas fa-calendar-day"></i> Promedios de Hoy</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon temp"><i class="fas fa-thermometer-half"></i></div>
@@ -180,19 +441,28 @@
                     <div class="stat-value" id="prom-temp">--<span class="stat-unit">°C</span></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon hum"><i class="fas fa-tint"></i></div>
+                    <div class="stat-icon hum"><i class="fas fa-droplet"></i></div>
                     <div class="stat-label">Humedad Promedio</div>
                     <div class="stat-value" id="prom-hum">--<span class="stat-unit">%</span></div>
                 </div>
             </div>
         </div>
 
+        <!-- FOOTER ACTUALIZADO SEGÚN SOLICITUD -->
         <div class="footer">
-            <p>Datos actualizados cada minuto · Hora real vía NTP</p>
+            <p>
+                <i class="fas fa-sync-alt"></i> Datos actualizados cada hora · 
+                <i class="fas fa-database"></i> Guardado en Firebase · 
+                <i class="fas fa-clock"></i> Hora vía NTP
+            </p>
+            <p style="margin-top: 8px; font-size: 0.8rem; opacity: 0.4;">
+                Estación climática ESP32 · CETYS Universidad
+            </p>
         </div>
     </div>
 
     <script>
+        // Configuración de Firebase (tus datos)
         const firebaseConfig = {
             apiKey: "AIzaSyD_TJ1TZHviv7940B-rN0tWjPRRCqr-NbQ",
             authDomain: "estacion-climatica.firebaseapp.com",
@@ -208,7 +478,8 @@
 
         let chartTemp, chartHum;
         let lecturasGlobales = [];
-        let periodoActual = 24;
+        let periodoActual = 24;      // Por defecto HOY
+        let nombrePeriodoActual = 'HOY';
 
         // ===== FUNCIONES DE FORMATEO =====
         function formatearHora(timestamp) {
@@ -236,9 +507,9 @@
         // ===== LECTURAS ACTUALES =====
         database.ref('/actual').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data && data.timestamp > 100000) { // Ignorar timestamps inválidos
-                document.getElementById('temp-valor').textContent = data.temperatura?.toFixed(1) || '--';
-                document.getElementById('hum-valor').textContent = data.humedad?.toFixed(1) || '--';
+            if (data && data.timestamp > 100000) {
+                document.getElementById('temp-valor').innerHTML = (data.temperatura?.toFixed(1) || '--') + '<span class="card-unit">°C</span>';
+                document.getElementById('hum-valor').innerHTML = (data.humedad?.toFixed(1) || '--') + '<span class="card-unit">%</span>';
                 
                 const fecha = formatearFechaHora(data.timestamp);
                 document.getElementById('temp-timestamp').innerHTML = `<i class="far fa-clock"></i> ${fecha}`;
@@ -246,19 +517,26 @@
             }
         });
 
-        // ===== CARGAR HISTORIAL =====
-        function cargarHistorial(horas) {
+        // ===== CARGAR HISTORIAL CON FILTRO DE HORAS =====
+        function cargarHistorial(horas, nombreBtn = null) {
             periodoActual = horas;
-            
+            if (nombreBtn) nombrePeriodoActual = nombreBtn;
+
+            // Actualizar botón activo
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.classList.remove('active');
-                if (btn.textContent.includes(horas + (horas === 24 ? ' HORAS' : ' DÍAS'))) {
+                // Comparar texto del botón (ignorando íconos)
+                if (btn.textContent.includes(nombreBtn) || 
+                    (horas === 24 && btn.textContent.includes('HOY')) ||
+                    (horas === 168 && btn.textContent.includes('SEMANA')) ||
+                    (horas === 6 && btn.textContent.includes('6 HORAS')) ||
+                    (horas === 12 && btn.textContent.includes('12 HORAS'))) {
                     btn.classList.add('active');
                 }
             });
 
             const historialRef = database.ref('/lecturas');
-            const limiteMs = horas * 60 * 60 * 1000;
+            const limiteMs = horas * 60 * 60 * 1000;  // convertir horas a ms
             const tiempoLimite = Date.now() - limiteMs;
             
             historialRef.once('value', (snapshot) => {
@@ -271,22 +549,37 @@
                         id: key,
                         timestampMs: value.timestamp * 1000
                     }))
-                    .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite) // Filtrar timestamps inválidos
+                    .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
                     .sort((a, b) => a.timestamp - b.timestamp);
 
                 if (lecturasGlobales.length > 0) {
                     actualizarGraficas();
                     actualizarPromedios();
+                } else {
+                    console.log('No hay lecturas en este período');
                 }
             });
         }
 
-        // ===== ACTUALIZAR GRÁFICAS (CORREGIDO) =====
+        // ===== ACTUALIZAR GRÁFICAS =====
         function actualizarGraficas() {
             if (lecturasGlobales.length === 0) return;
 
-            // Eje X: horas del día
-            const horas = lecturasGlobales.map(l => formatearHora(l.timestamp));
+            // Eje X: dependiendo del período elegimos formato
+            const etiquetas = lecturasGlobales.map(l => {
+                if (periodoActual <= 24) {
+                    return formatearHora(l.timestamp);  // solo hora
+                } else {
+                    // para semana: mostrar día/mes hora
+                    const fecha = new Date(l.timestamp * 1000);
+                    return fecha.toLocaleString('es-MX', { 
+                        weekday: 'short', 
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+            });
+
             const temperaturas = lecturasGlobales.map(l => l.temperatura);
             const humedades = lecturasGlobales.map(l => l.humedad);
 
@@ -296,6 +589,9 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#ddd',
                         callbacks: {
                             label: (context) => {
                                 const data = lecturasGlobales[context.dataIndex];
@@ -306,31 +602,33 @@
                 },
                 scales: {
                     x: { 
-                        title: { display: true, text: 'Hora del día' },
-                        ticks: { maxRotation: 45, minRotation: 45 }
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#aaa', maxRotation: 45, minRotation: 45 }
                     },
                     y: { 
-                        beginAtZero: false,
-                        title: { display: true, text: 'Valor' }
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#aaa' },
+                        beginAtZero: false
                     }
                 }
             };
 
-            // Gráfica de Temperatura
+            // Gráfica Temperatura
             const ctxTemp = document.getElementById('grafica-temp').getContext('2d');
             if (chartTemp) chartTemp.destroy();
             
             chartTemp = new Chart(ctxTemp, {
                 type: 'line',
                 data: {
-                    labels: horas,
+                    labels: etiquetas,
                     datasets: [{
                         label: 'Temperatura (°C)',
                         data: temperaturas,
-                        borderColor: '#ff6b6b',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 3,
+                        borderColor: '#FF8A8A',
+                        backgroundColor: 'rgba(255, 138, 138, 0.15)',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
                         tension: 0.3,
                         fill: true
                     }]
@@ -338,21 +636,22 @@
                 options: opcionesBase
             });
 
-            // Gráfica de Humedad
+            // Gráfica Humedad
             const ctxHum = document.getElementById('grafica-hum').getContext('2d');
             if (chartHum) chartHum.destroy();
             
             chartHum = new Chart(ctxHum, {
                 type: 'line',
                 data: {
-                    labels: horas,
+                    labels: etiquetas,
                     datasets: [{
                         label: 'Humedad (%)',
                         data: humedades,
-                        borderColor: '#4ecdc4',
-                        backgroundColor: 'rgba(78, 205, 196, 0.1)',
-                        borderWidth: 2,
-                        pointRadius: 3,
+                        borderColor: '#7FE0D9',
+                        backgroundColor: 'rgba(127, 224, 217, 0.15)',
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
                         tension: 0.3,
                         fill: true
                     }]
@@ -367,7 +666,7 @@
             });
         }
 
-        // ===== ACTUALIZAR PROMEDIOS =====
+        // ===== ACTUALIZAR PROMEDIOS (HOY) =====
         function actualizarPromedios() {
             if (lecturasGlobales.length === 0) return;
 
@@ -395,15 +694,17 @@
             }
         }
 
-        // ===== CAMBIAR PERÍODO =====
-        function cambiarPeriodo(horas) {
-            cargarHistorial(horas);
+        // ===== CAMBIAR PERÍODO (NUEVA VERSIÓN) =====
+        function cambiarPeriodo(horas, nombre) {
+            cargarHistorial(horas, nombre);
         }
 
         // ===== INICIALIZAR =====
         window.onload = () => {
-            cargarHistorial(24);
-            setInterval(() => cargarHistorial(periodoActual), 60000);
+            // Cargar HOY por defecto (24h)
+            cargarHistorial(24, 'HOY');
+            // Actualizar cada hora (3600000 ms) - tal como pide el footer
+            setInterval(() => cargarHistorial(periodoActual, nombrePeriodoActual), 3600000);
         };
     </script>
 </body>
