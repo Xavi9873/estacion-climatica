@@ -504,13 +504,13 @@
         <div class="current-grid">
             <div class="card temperatura">
                 <div class="card-icon"><i class="fas fa-thermometer-half"></i></div>
-                <div class="card-label">Temperatura</div>
+                <div class="card-label">Temperature</div>
                 <div class="card-value" id="temp-valor">--<span class="card-unit">°C</span></div>
                 <div class="timestamp" id="temp-timestamp"><i class="far fa-clock"></i> --</div>
             </div>
             <div class="card humedad">
                 <div class="card-icon"><i class="fas fa-droplet"></i></div>
-                <div class="card-label">Humedad</div>
+                <div class="card-label">Humidity</div>
                 <div class="card-value" id="hum-valor">--<span class="card-unit">%</span></div>
                 <div class="timestamp" id="hum-timestamp"><i class="far fa-clock"></i> --</div>
             </div>
@@ -519,40 +519,40 @@
         <!-- BOTONES: 6h, 12h, Hoy, Semana -->
         <div class="period-selector">
             <button class="period-btn" onclick="cambiarPeriodo(6, '6 HORAS')">
-                <i class="fas fa-hourglass-start"></i> 6 HORAS
+                <i class="fas fa-hourglass-start"></i> 6 Hr
             </button>
             <button class="period-btn" onclick="cambiarPeriodo(12, '12 HORAS')">
-                <i class="fas fa-hourglass-half"></i> 12 HORAS
+                <i class="fas fa-hourglass-half"></i> 12 Hr
             </button>
             <button class="period-btn active" onclick="cambiarPeriodo(24, 'HOY')">
-                <i class="fas fa-sun"></i> HOY
+                <i class="fas fa-sun"></i> Today
             </button>
             <button class="period-btn" onclick="cambiarPeriodo(168, 'SEMANA')">
-                <i class="fas fa-calendar-week"></i> SEMANA
+                <i class="fas fa-calendar-week"></i> Week
             </button>
         </div>
 
         <!-- GRÁFICAS CON OVERLAY DE "SIN DATOS" -->
         <div class="charts-grid">
             <div class="chart-card">
-                <div class="chart-title temp"><i class="fas fa-thermometer-half"></i> Temperatura (°C)</div>
+                <div class="chart-title temp"><i class="fas fa-thermometer-half"></i> Temperature (°C)</div>
                 <div class="chart-wrapper">
                     <canvas id="grafica-temp"></canvas>
                     <div class="chart-overlay" id="overlay-temp">
                         <i class="fas fa-chart-line"></i>
-                        <p>No hay datos suficientes</p>
-                        <small>Selecciona otro período</small>
+                        <p>Not enough data</p>
+                        <small>Select another period</small>
                     </div>
                 </div>
             </div>
             <div class="chart-card">
-                <div class="chart-title hum"><i class="fas fa-droplet"></i> Humedad (%)</div>
+                <div class="chart-title hum"><i class="fas fa-droplet"></i> Humidity (%)</div>
                 <div class="chart-wrapper">
                     <canvas id="grafica-hum"></canvas>
                     <div class="chart-overlay" id="overlay-hum">
                         <i class="fas fa-chart-line"></i>
-                        <p>No hay datos suficientes</p>
-                        <small>Selecciona otro período</small>
+                        <p>Not enough data</p>
+                        <small>Select another period</small>
                     </div>
                 </div>
             </div>
@@ -560,16 +560,16 @@
 
         <!-- PROMEDIOS DEL DÍA -->
         <div class="daily-stats">
-            <h2><i class="fas fa-calendar-day"></i> Promedios de Hoy</h2>
+            <h2><i class="fas fa-calendar-day"></i> Today's Averages</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon temp"><i class="fas fa-thermometer-half"></i></div>
-                    <div class="stat-label">Temperatura Promedio</div>
+                    <div class="stat-label">Average Temperature</div>
                     <div class="stat-value" id="prom-temp">--<span class="stat-unit">°C</span></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon hum"><i class="fas fa-droplet"></i></div>
-                    <div class="stat-label">Humedad Promedio</div>
+                    <div class="stat-label">Average Humidity</div>
                     <div class="stat-value" id="prom-hum">--<span class="stat-unit">%</span></div>
                 </div>
             </div>
@@ -578,9 +578,9 @@
         <!-- FOOTER CON INTEGRANTES DEL EQUIPO -->
         <div class="footer">
             <div class="footer-info">
-                <i class="fas fa-sync-alt"></i> Datos actualizados cada hora · 
-                <i class="fas fa-database"></i> Guardado en Firebase · 
-                <i class="fas fa-clock"></i> Hora vía NTP
+                <i class="fas fa-sync-alt"></i> Data updated every 30 min · 
+                <i class="fas fa-database"></i> Stored in Firebase · 
+                <i class="fas fa-clock"></i> Time via NTP
             </div>
             
             <!-- NUEVO: Integrantes del equipo -->
@@ -597,7 +597,7 @@
             </div>
             
             <div class="cetys-credit">
-                Estación climática ESP32 · CETYS Universidad
+                Weather Station ESP32 · CETYS University
             </div>
         </div>
     </div>
@@ -889,3 +889,4 @@
     </script>
 </body>
 </html>
+
