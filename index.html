@@ -175,7 +175,7 @@
             backdrop-filter: blur(5px);
         }
 
-        /* ===== SELECTOR DE PERÍODOS (NUEVO: 6h, 12h, Hoy, Semana) ===== */
+        /* ===== SELECTOR DE PERÍODOS ===== */
         .period-selector {
             display: flex;
             justify-content: center;
@@ -216,6 +216,35 @@
             box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
         }
 
+        /* ===== MENSAJE DE SIN DATOS ===== */
+        .no-data-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 40px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .no-data-message i {
+            font-size: 3rem;
+            color: #6C8CFF;
+            opacity: 0.5;
+            margin-bottom: 16px;
+        }
+
+        .no-data-message p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .no-data-message small {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         /* ===== GRÁFICAS ===== */
         .charts-grid {
             display: grid;
@@ -231,6 +260,7 @@
             padding: 24px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            position: relative;
         }
 
         .chart-title {
@@ -253,7 +283,50 @@
             width: 100%;
         }
 
-        /* ===== TARJETA DE PROMEDIOS DIARIOS (MEJORADA) ===== */
+        .chart-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 17, 32, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 40px;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .chart-overlay i {
+            font-size: 2.5rem;
+            color: #6C8CFF;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .chart-overlay p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .chart-overlay small {
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+        }
+
+        /* ===== TARJETA DE PROMEDIOS DIARIOS ===== */
         .daily-stats {
             background: rgba(255, 255, 255, 0.03);
             backdrop-filter: blur(10px);
@@ -324,21 +397,60 @@
             margin-left: 5px;
         }
 
-        /* ===== FOOTER ACTUALIZADO ===== */
+        /* ===== FOOTER ACTUALIZADO CON INTEGRANTES ===== */
         .footer {
             text-align: center;
             margin-top: 40px;
-            padding: 20px;
+            padding: 24px;
             background: rgba(255, 255, 255, 0.02);
             border-radius: 60px;
             border: 1px solid rgba(255, 255, 255, 0.03);
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.6);
         }
 
-        .footer i {
+        .footer-info {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 16px;
+        }
+
+        .footer-info i {
             color: #6C8CFF;
             margin: 0 6px;
+        }
+
+        .team-members {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .member {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .member:hover {
+            color: #6C8CFF;
+        }
+
+        .member i {
+            font-size: 1rem;
+            color: #6C8CFF;
+            opacity: 0.6;
+        }
+
+        .cetys-credit {
+            margin-top: 12px;
+            font-size: 0.8rem;
+            opacity: 0.3;
         }
 
         /* ===== RESPONSIVE ===== */
@@ -357,6 +469,11 @@
                 padding: 12px 20px;
                 font-size: 0.85rem;
             }
+            .team-members {
+                gap: 16px;
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -368,7 +485,7 @@
 </head>
 <body>
     <div class="container">
-        <!-- HEADER MÁS ATRACTIVO -->
+        <!-- HEADER -->
         <div class="header">
             <h1>
                 <i class="fas fa-cloud-sun"></i> CETYS Weather Station
@@ -399,7 +516,7 @@
             </div>
         </div>
 
-        <!-- NUEVOS BOTONES: 6h, 12h, Hoy, Semana -->
+        <!-- BOTONES: 6h, 12h, Hoy, Semana -->
         <div class="period-selector">
             <button class="period-btn" onclick="cambiarPeriodo(6, '6 HORAS')">
                 <i class="fas fa-hourglass-start"></i> 6 HORAS
@@ -415,18 +532,28 @@
             </button>
         </div>
 
-        <!-- GRÁFICAS -->
+        <!-- GRÁFICAS CON OVERLAY DE "SIN DATOS" -->
         <div class="charts-grid">
             <div class="chart-card">
                 <div class="chart-title temp"><i class="fas fa-thermometer-half"></i> Temperatura (°C)</div>
                 <div class="chart-wrapper">
                     <canvas id="grafica-temp"></canvas>
+                    <div class="chart-overlay" id="overlay-temp">
+                        <i class="fas fa-chart-line"></i>
+                        <p>No hay datos suficientes</p>
+                        <small>Selecciona otro período</small>
+                    </div>
                 </div>
             </div>
             <div class="chart-card">
                 <div class="chart-title hum"><i class="fas fa-droplet"></i> Humedad (%)</div>
                 <div class="chart-wrapper">
                     <canvas id="grafica-hum"></canvas>
+                    <div class="chart-overlay" id="overlay-hum">
+                        <i class="fas fa-chart-line"></i>
+                        <p>No hay datos suficientes</p>
+                        <small>Selecciona otro período</small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -448,21 +575,35 @@
             </div>
         </div>
 
-        <!-- FOOTER ACTUALIZADO SEGÚN SOLICITUD -->
+        <!-- FOOTER CON INTEGRANTES DEL EQUIPO -->
         <div class="footer">
-            <p>
+            <div class="footer-info">
                 <i class="fas fa-sync-alt"></i> Datos actualizados cada hora · 
                 <i class="fas fa-database"></i> Guardado en Firebase · 
                 <i class="fas fa-clock"></i> Hora vía NTP
-            </p>
-            <p style="margin-top: 8px; font-size: 0.8rem; opacity: 0.4;">
+            </div>
+            
+            <!-- NUEVO: Integrantes del equipo -->
+            <div class="team-members">
+                <div class="member">
+                    <i class="fas fa-user-graduate"></i> Xavier Clemente
+                </div>
+                <div class="member">
+                    <i class="fas fa-user-graduate"></i> Mario Morales
+                </div>
+                <div class="member">
+                    <i class="fas fa-user-graduate"></i> Pedro Troncoso
+                </div>
+            </div>
+            
+            <div class="cetys-credit">
                 Estación climática ESP32 · CETYS Universidad
-            </p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Configuración de Firebase (tus datos)
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyD_TJ1TZHviv7940B-rN0tWjPRRCqr-NbQ",
             authDomain: "estacion-climatica.firebaseapp.com",
@@ -478,8 +619,12 @@
 
         let chartTemp, chartHum;
         let lecturasGlobales = [];
-        let periodoActual = 24;      // Por defecto HOY
+        let periodoActual = 24;
         let nombrePeriodoActual = 'HOY';
+
+        // Referencias a overlays
+        const overlayTemp = document.getElementById('overlay-temp');
+        const overlayHum = document.getElementById('overlay-hum');
 
         // ===== FUNCIONES DE FORMATEO =====
         function formatearHora(timestamp) {
@@ -504,6 +649,33 @@
             });
         }
 
+        // ===== MOSTRAR/OCULTAR OVERLAYS =====
+        function mostrarOverlays(mostrar) {
+            if (mostrar) {
+                overlayTemp.classList.add('show');
+                overlayHum.classList.add('show');
+            } else {
+                overlayTemp.classList.remove('show');
+                overlayHum.classList.remove('show');
+            }
+        }
+
+        // ===== LIMPIAR GRÁFICAS =====
+        function limpiarGraficas() {
+            if (chartTemp) {
+                chartTemp.destroy();
+                chartTemp = null;
+            }
+            if (chartHum) {
+                chartHum.destroy();
+                chartHum = null;
+            }
+            
+            // Limpiar los promedios
+            document.getElementById('prom-temp').innerHTML = '--<span class="stat-unit">°C</span>';
+            document.getElementById('prom-hum').innerHTML = '--<span class="stat-unit">%</span>';
+        }
+
         // ===== LECTURAS ACTUALES =====
         database.ref('/actual').on('value', (snapshot) => {
             const data = snapshot.val();
@@ -525,7 +697,6 @@
             // Actualizar botón activo
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.classList.remove('active');
-                // Comparar texto del botón (ignorando íconos)
                 if (btn.textContent.includes(nombreBtn) || 
                     (horas === 24 && btn.textContent.includes('HOY')) ||
                     (horas === 168 && btn.textContent.includes('SEMANA')) ||
@@ -536,12 +707,18 @@
             });
 
             const historialRef = database.ref('/lecturas');
-            const limiteMs = horas * 60 * 60 * 1000;  // convertir horas a ms
+            const limiteMs = horas * 60 * 60 * 1000;
             const tiempoLimite = Date.now() - limiteMs;
             
             historialRef.once('value', (snapshot) => {
                 const data = snapshot.val();
-                if (!data) return;
+                
+                // Si no hay datos en Firebase
+                if (!data) {
+                    limpiarGraficas();
+                    mostrarOverlays(true);
+                    return;
+                }
 
                 lecturasGlobales = Object.entries(data)
                     .map(([key, value]) => ({
@@ -552,11 +729,15 @@
                     .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
                     .sort((a, b) => a.timestamp - b.timestamp);
 
-                if (lecturasGlobales.length > 0) {
+                // Si no hay suficientes datos para el período seleccionado
+                if (lecturasGlobales.length === 0) {
+                    limpiarGraficas();
+                    mostrarOverlays(true);
+                } else {
+                    // Hay datos suficientes, ocultar overlays y mostrar gráficas
+                    mostrarOverlays(false);
                     actualizarGraficas();
                     actualizarPromedios();
-                } else {
-                    console.log('No hay lecturas en este período');
                 }
             });
         }
@@ -568,9 +749,8 @@
             // Eje X: dependiendo del período elegimos formato
             const etiquetas = lecturasGlobales.map(l => {
                 if (periodoActual <= 24) {
-                    return formatearHora(l.timestamp);  // solo hora
+                    return formatearHora(l.timestamp);
                 } else {
-                    // para semana: mostrar día/mes hora
                     const fecha = new Date(l.timestamp * 1000);
                     return fecha.toLocaleString('es-MX', { 
                         weekday: 'short', 
@@ -694,16 +874,16 @@
             }
         }
 
-        // ===== CAMBIAR PERÍODO (NUEVA VERSIÓN) =====
+        // ===== CAMBIAR PERÍODO =====
         function cambiarPeriodo(horas, nombre) {
             cargarHistorial(horas, nombre);
         }
 
         // ===== INICIALIZAR =====
         window.onload = () => {
-            // Cargar HOY por defecto (24h)
+            // Cargar HOY por defecto
             cargarHistorial(24, 'HOY');
-            // Actualizar cada hora (3600000 ms) - tal como pide el footer
+            // Actualizar cada hora
             setInterval(() => cargarHistorial(periodoActual, nombrePeriodoActual), 3600000);
         };
     </script>
