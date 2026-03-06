@@ -337,6 +337,345 @@
             backdrop-filter: blur(10px);
             border-radius: 40px;
             padding: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WeatherStation ESP32 · Clima CETYS</title>
+    
+    <!-- Font Awesome 6 (iconos) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Chart.js 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Firebase 8 (compatible) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <!-- Flatpickr para selector de fechas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    
+    <!-- Google Fonts (tipografía limpia) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0B1120;  /* Fondo oscuro elegante */
+            min-height: 100vh;
+            padding: 24px 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+        }
+
+        /* ===== HEADER CON EFECTO GLASS ===== */
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 24px 32px;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #A7C0FF, #6C8CFF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header h1 i {
+            margin-right: 12px;
+            color: #6C8CFF;
+            -webkit-text-fill-color: initial;
+        }
+
+        .weather-badge {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .badge-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 40px;
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.95rem;
+        }
+
+        .badge-item i {
+            color: #6C8CFF;
+            margin-right: 8px;
+        }
+
+        /* ===== TARJETAS PRINCIPALES (VIDRIO) ===== */
+        .current-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            border-radius: 40px;
+            padding: 32px;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.3), transparent);
+            pointer-events: none;
+        }
+
+        .card.temperatura {
+            background: linear-gradient(145deg, #2B1A3D, #1A1F35);
+            box-shadow: 0 20px 40px rgba(255, 107, 107, 0.2);
+        }
+
+        .card.humedad {
+            background: linear-gradient(145deg, #1A2F3D, #1A2835);
+            box-shadow: 0 20px 40px rgba(78, 205, 196, 0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-label {
+            font-size: 1rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .card-value {
+            font-size: 5.5rem;
+            font-weight: 700;
+            line-height: 1;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .card-unit {
+            font-size: 1.5rem;
+            font-weight: 400;
+            opacity: 0.6;
+            margin-left: 8px;
+        }
+
+        .timestamp {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            background: rgba(0,0,0,0.2);
+            padding: 8px 16px;
+            border-radius: 60px;
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(5px);
+        }
+
+        /* ===== SELECTOR DE PERÍODOS ===== */
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+
+        .period-btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 60px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            letter-spacing: 0.3px;
+        }
+
+        .period-btn i {
+            margin-right: 8px;
+            opacity: 0.8;
+        }
+
+        .period-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255,  255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .period-btn.active {
+            background: linear-gradient(135deg, #6C8CFF, #8A6CFF);
+            border-color: rgba(255,255,255,0.2);
+            box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
+        }
+
+        /* ===== MENSAJE DE SIN DATOS ===== */
+        .no-data-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 40px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .no-data-message i {
+            font-size: 3rem;
+            color: #6C8CFF;
+            opacity: 0.5;
+            margin-bottom: 16px;
+        }
+
+        .no-data-message p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .no-data-message small {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* ===== GRÁFICAS ===== */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            position: relative;
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-title.temp { color: #FF8A8A; }
+        .chart-title.hum { color: #7FE0D9; }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+
+        .chart-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 17, 32, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 40px;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .chart-overlay i {
+            font-size: 2.5rem;
+            color: #6C8CFF;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+
+        .chart-overlay p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
+        .chart-overlay small {
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.9rem;
+        }
+
+        /* ===== TARJETA DE PROMEDIOS DIARIOS ===== */
+        .daily-stats {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            padding: 32px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             margin-bottom: 32px;
         }
@@ -497,8 +836,8 @@
             background: rgba(108, 140, 255, 0.5);
         }
 
-        /* Barra de búsqueda y filtros */
-        .search-bar {
+        /* Barra de filtro por fecha */
+        .filter-bar {
             padding: 20px 24px;
             background: rgba(0, 0, 0, 0.3);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -508,41 +847,13 @@
             align-items: center;
         }
 
-        .search-input-group {
-            flex: 1;
-            min-width: 250px;
-            position: relative;
-        }
-
-        .search-input-group i {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
+        .filter-label {
             color: #6C8CFF;
-            opacity: 0.6;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 14px 20px 14px 48px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 40px;
-            color: #fff;
+            font-weight: 600;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #6C8CFF;
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.2);
-        }
-
-        .search-input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .date-range {
@@ -550,6 +861,7 @@
             gap: 12px;
             flex-wrap: wrap;
             align-items: center;
+            flex: 1;
         }
 
         .date-input {
@@ -561,7 +873,7 @@
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-width: 160px;
+            min-width: 180px;
         }
 
         .date-input:hover {
@@ -575,7 +887,7 @@
             box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.2);
         }
 
-        .search-btn {
+        .filter-btn {
             padding: 12px 28px;
             background: linear-gradient(135deg, #6C8CFF, #8A6CFF);
             border: none;
@@ -591,7 +903,7 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .search-btn:hover {
+        .filter-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
         }
@@ -672,7 +984,7 @@
             font-style: italic;
         }
 
-        .search-stats {
+        .filter-stats {
             padding: 12px 24px;
             background: rgba(108, 140, 255, 0.1);
             color: #6C8CFF;
@@ -764,7 +1076,7 @@
             .registros-table td {
                 padding: 10px 6px;
             }
-            .search-bar {
+            .filter-bar {
                 flex-direction: column;
                 align-items: stretch;
             }
@@ -884,7 +1196,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN EXPANDIBLE DE REGISTROS CON BÚSQUEDA -->
+        <!-- SECCIÓN EXPANDIBLE DE REGISTROS CON FILTRO POR FECHA -->
         <div class="registros-section">
             <div class="registros-header" onclick="toggleRegistros()">
                 <h2>
@@ -896,21 +1208,20 @@
                 </div>
             </div>
             <div class="registros-content" id="registros-content">
-                <!-- Barra de búsqueda y filtros -->
-                <div class="search-bar" onclick="event.stopPropagation()">
-                    <div class="search-input-group">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="search-input" id="searchInput" placeholder="Search by date, temperature or humidity...">
+                <!-- Barra de filtro por fecha -->
+                <div class="filter-bar" onclick="event.stopPropagation()">
+                    <div class="filter-label">
+                        <i class="fas fa-calendar-alt"></i> Filter by date:
                     </div>
                     <div class="date-range">
                         <input type="text" class="date-input" id="startDate" placeholder="Start date">
                         <span style="color: #6C8CFF;">→</span>
                         <input type="text" class="date-input" id="endDate" placeholder="End date">
                     </div>
-                    <button class="search-btn" onclick="aplicarFiltros()">
-                        <i class="fas fa-filter"></i> Apply Filters
+                    <button class="filter-btn" onclick="aplicarFiltroFecha()">
+                        <i class="fas fa-filter"></i> Apply Filter
                     </button>
-                    <button class="clear-btn" onclick="limpiarFiltros()">
+                    <button class="clear-btn" onclick="limpiarFiltroFecha()">
                         <i class="fas fa-times"></i> Clear
                     </button>
                 </div>
@@ -932,7 +1243,7 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="search-stats" id="search-stats">
+                <div class="filter-stats" id="filter-stats">
                     <i class="fas fa-info-circle"></i> <span id="stats-text">Showing all records</span>
                 </div>
             </div>
@@ -983,7 +1294,7 @@
         let chartTemp, chartHum;
         let lecturasGlobales = [];
         let todasLasLecturas = []; // Para la tabla de registros
-        let lecturasFiltradas = []; // Para búsqueda
+        let lecturasFiltradas = []; // Para filtro por fecha
         let periodoActual = 24;
         let nombrePeriodoActual = 'HOY';
 
@@ -994,82 +1305,57 @@
         // Inicializar Flatpickr para fechas
         let startDatePicker, endDatePicker;
 
-        // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X SEGÚN CANTIDAD DE DATOS =====
-        function generarEtiquetasInteligentes() {
+        // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X =====
+        function generarEtiquetasGrafica() {
             if (lecturasGlobales.length === 0) return [];
 
-            const cantidad = lecturasGlobales.length;
-            
             return lecturasGlobales.map((l, index) => {
                 const fecha = new Date(l.timestamp * 1000);
                 
-                // Para período de 12 horas (o menos)
-                if (periodoActual <= 12) {
-                    // Mostrar hora:minuto para todos, pero si hay muchos datos (>15), mostrar cada 2
-                    if (cantidad > 15) {
-                        // Mostrar etiqueta cada 2 puntos para no saturar
-                        if (index % 2 === 0) {
-                            return fecha.toLocaleTimeString('es-MX', { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                hour12: false 
-                            });
-                        } else {
-                            return ''; // Etiqueta vacía para puntos intermedios
-                        }
-                    } else {
-                        return fecha.toLocaleTimeString('es-MX', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: false 
-                        });
-                    }
+                // Para 6h, 12h y 24h: mostrar TODAS las fechas completas
+                if (periodoActual <= 24) {
+                    return fecha.toLocaleString('es-MX', { 
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: false 
+                    });
                 }
-                // Para período de 24 horas
-                else if (periodoActual <= 24) {
-                    if (cantidad > 20) {
-                        // Mostrar aproximadamente 8-10 etiquetas
-                        const paso = Math.ceil(cantidad / 8);
-                        if (index % paso === 0 || index === 0 || index === cantidad - 1) {
-                            return fecha.toLocaleTimeString('es-MX', { 
-                                hour: '2-digit', 
-                                minute: '2-digit',
-                                hour12: false 
-                            });
-                        } else {
-                            return '';
-                        }
-                    } else {
-                        return fecha.toLocaleTimeString('es-MX', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: false 
-                        });
-                    }
-                }
-                else { // Semana
-                    if (cantidad > 30) {
-                        // Mostrar solo días y alguna hora representativa
-                        if (index % 4 === 0) { // Cada 4 puntos (aprox cada 2 horas)
-                            return fecha.toLocaleString('es-MX', { 
-                                weekday: 'short',
-                                hour: '2-digit'
-                            });
-                        } else if (index === 0 || index === cantidad - 1) {
-                            return fecha.toLocaleString('es-MX', { 
-                                weekday: 'short',
-                                day: 'numeric',
-                                hour: '2-digit'
-                            });
-                        } else {
-                            return '';
-                        }
-                    } else {
+                // Para semana: mostrar 4 fechas por día
+                else {
+                    const horas = fecha.getHours();
+                    const minutos = fecha.getMinutes();
+                    
+                    // Mostrar solo en horas específicas: 00:00, 06:00, 12:00, 18:00
+                    if (horas === 0 && minutos < 30) {
                         return fecha.toLocaleString('es-MX', { 
-                            weekday: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
                         });
+                    } else if (horas === 6 && minutos < 30) {
+                        return fecha.toLocaleString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    } else if (horas === 12 && minutos < 30) {
+                        return fecha.toLocaleString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    } else if (horas === 18 && minutos < 30) {
+                        return fecha.toLocaleString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    } else {
+                        return ''; // No mostrar etiqueta para otras horas
                     }
                 }
             });
@@ -1134,70 +1420,72 @@
 
             startDatePicker = flatpickr("#startDate", {
                 locale: 'es',
-                dateFormat: "Y-m-d",
+                dateFormat: "Y-m-d H:i",
+                enableTime: true,
+                time_24hr: true,
+                minuteIncrement: 30,
+                defaultHour: 0,
+                defaultMinute: 0,
                 maxDate: new Date(maxDate),
                 onChange: function() {
-                    aplicarFiltros();
+                    // No aplicar filtro automático
                 }
             });
 
             endDatePicker = flatpickr("#endDate", {
                 locale: 'es',
-                dateFormat: "Y-m-d",
+                dateFormat: "Y-m-d H:i",
+                enableTime: true,
+                time_24hr: true,
+                minuteIncrement: 30,
+                defaultHour: 23,
+                defaultMinute: 59,
                 maxDate: new Date(),
                 onChange: function() {
-                    aplicarFiltros();
+                    // No aplicar filtro automático
                 }
             });
         }
 
-        // ===== APLICAR FILTROS DE BÚSQUEDA =====
-        function aplicarFiltros() {
-            const searchText = document.getElementById('searchInput').value.toLowerCase();
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
+        // ===== APLICAR FILTRO POR FECHA =====
+        function aplicarFiltroFecha() {
+            const startDateStr = document.getElementById('startDate').value;
+            const endDateStr = document.getElementById('endDate').value;
+
+            // Si no hay fechas seleccionadas, mostrar todos
+            if (!startDateStr && !endDateStr) {
+                lecturasFiltradas = [...todasLasLecturas];
+                actualizarTablaRegistros();
+                actualizarTotalRegistros();
+                return;
+            }
+
+            const startDate = startDateStr ? new Date(startDateStr).getTime() : null;
+            const endDate = endDateStr ? new Date(endDateStr).getTime() : null;
 
             lecturasFiltradas = todasLasLecturas.filter(lectura => {
-                const fecha = new Date(lectura.timestamp * 1000);
-                const fechaStr = fecha.toLocaleString('es-MX').toLowerCase();
-                const tempStr = lectura.temperatura?.toString() || '';
-                const humStr = lectura.humedad?.toString() || '';
+                const fechaLectura = lectura.timestamp * 1000;
                 
-                // Filtro por texto
-                let matchesText = true;
-                if (searchText) {
-                    matchesText = fechaStr.includes(searchText) || 
-                                 tempStr.includes(searchText) || 
-                                 humStr.includes(searchText);
+                let matchesStart = true;
+                let matchesEnd = true;
+                
+                if (startDate) {
+                    matchesStart = fechaLectura >= startDate;
                 }
                 
-                // Filtro por rango de fechas
-                let matchesDate = true;
-                if (startDate && endDate) {
-                    const fechaLectura = fecha.getTime();
-                    const start = new Date(startDate).getTime();
-                    const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1); // Hasta fin del día
-                    matchesDate = fechaLectura >= start && fechaLectura <= end;
-                } else if (startDate) {
-                    const fechaLectura = fecha.getTime();
-                    const start = new Date(startDate).getTime();
-                    matchesDate = fechaLectura >= start;
-                } else if (endDate) {
-                    const fechaLectura = fecha.getTime();
-                    const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1);
-                    matchesDate = fechaLectura <= end;
+                if (endDate) {
+                    matchesEnd = fechaLectura <= endDate;
                 }
                 
-                return matchesText && matchesDate;
+                return matchesStart && matchesEnd;
             });
 
             actualizarTablaRegistros();
             actualizarTotalRegistros();
         }
 
-        // ===== LIMPIAR FILTROS =====
-        function limpiarFiltros() {
-            document.getElementById('searchInput').value = '';
+        // ===== LIMPIAR FILTRO DE FECHA =====
+        function limpiarFiltroFecha() {
             document.getElementById('startDate').value = '';
             document.getElementById('endDate').value = '';
             
@@ -1218,11 +1506,11 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="no-registros">
-                            <i class="fas fa-search"></i> No records match your filters
+                            <i class="fas fa-calendar-times"></i> No records in the selected date range
                         </td>
                     </tr>
                 `;
-                statsText.textContent = 'No records match the filters';
+                statsText.textContent = 'No records match the selected date range';
                 return;
             }
 
@@ -1256,7 +1544,7 @@
                 html += `
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 16px; color: #6C8CFF; background: rgba(108, 140, 255, 0.1);">
-                            <i class="fas fa-ellipsis-h"></i> Showing first 50 of ${lecturasFiltradas.length} filtered records
+                            <i class="fas fa-ellipsis-h"></i> Showing first 50 of ${lecturasFiltradas.length} records
                         </td>
                     </tr>
                 `;
@@ -1267,7 +1555,7 @@
             if (lecturasFiltradas.length === todasLasLecturas.length) {
                 statsText.textContent = `Showing all ${todasLasLecturas.length} records`;
             } else {
-                statsText.textContent = `Found ${lecturasFiltradas.length} records matching filters`;
+                statsText.textContent = `Found ${lecturasFiltradas.length} records in selected date range`;
             }
         }
 
@@ -1345,8 +1633,6 @@
             periodoActual = horas;
             if (nombreBtn) nombrePeriodoActual = nombreBtn;
 
-            console.log(`Cargando período de ${horas} horas (${nombreBtn})`); // Debug
-
             // Actualizar botón activo
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -1363,14 +1649,11 @@
             const limiteMs = horas * 60 * 60 * 1000;
             const tiempoLimite = Date.now() - limiteMs;
             
-            console.log('Tiempo límite:', new Date(tiempoLimite).toLocaleString()); // Debug
-            
             historialRef.once('value', (snapshot) => {
                 const data = snapshot.val();
                 
                 // Si no hay datos en Firebase
                 if (!data) {
-                    console.log('No hay datos en Firebase'); // Debug
                     limpiarGraficas();
                     mostrarOverlays(true);
                     return;
@@ -1384,14 +1667,6 @@
                     }))
                     .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
                     .sort((a, b) => a.timestamp - b.timestamp);
-
-                console.log(`Encontradas ${lecturasGlobales.length} lecturas para ${horas} horas`); // Debug
-                
-                // Mostrar primera y última lectura para verificar
-                if (lecturasGlobales.length > 0) {
-                    console.log('Primera lectura:', new Date(lecturasGlobales[0].timestamp * 1000).toLocaleString());
-                    console.log('Última lectura:', new Date(lecturasGlobales[lecturasGlobales.length - 1].timestamp * 1000).toLocaleString());
-                }
 
                 // Si no hay suficientes datos para el período seleccionado
                 if (lecturasGlobales.length === 0) {
@@ -1410,8 +1685,8 @@
         function actualizarGraficas() {
             if (lecturasGlobales.length === 0) return;
 
-            // Usar etiquetas inteligentes
-            const etiquetas = generarEtiquetasInteligentes();
+            // Usar etiquetas personalizadas según el período
+            const etiquetas = generarEtiquetasGrafica();
 
             const temperaturas = lecturasGlobales.map(l => l.temperatura);
             const humedades = lecturasGlobales.map(l => l.humedad);
@@ -1443,9 +1718,8 @@
                             color: '#aaa', 
                             maxRotation: 45, 
                             minRotation: 45,
-                            autoSkip: true,
-                            maxTicksLimit: periodoActual <= 12 ? 8 : 12, // Menos etiquetas para 12h
-                            autoSkipPadding: 10
+                            autoSkip: false, // No auto-skip para mostrar todas las etiquetas
+                            maxTicksLimit: periodoActual <= 24 ? 100 : 50 // Límite alto para 6h,12h,24h
                         }
                     },
                     y: { 
@@ -1556,9 +1830,6 @@
             cargarTodosLosRegistros();
             // Actualizar cada hora
             setInterval(() => cargarHistorial(periodoActual, nombrePeriodoActual), 3600000);
-            
-            // Event listener para búsqueda en tiempo real
-            document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
         };
     </script>
 </body>
