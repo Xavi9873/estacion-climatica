@@ -15,6 +15,11 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     
+    <!-- Flatpickr para selector de fechas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    
     <!-- Google Fonts (tipografía limpia) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     
@@ -469,7 +474,7 @@
         }
 
         .registros-content.expanded {
-            max-height: 600px;
+            max-height: 800px;
             overflow-y: auto;
         }
 
@@ -492,9 +497,125 @@
             background: rgba(108, 140, 255, 0.5);
         }
 
+        /* Barra de búsqueda y filtros */
+        .search-bar {
+            padding: 20px 24px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .search-input-group {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        .search-input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6C8CFF;
+            opacity: 0.6;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #6C8CFF;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .date-range {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .date-input {
+            padding: 12px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: #fff;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 160px;
+        }
+
+        .date-input:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #6C8CFF;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #6C8CFF;
+            box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.2);
+        }
+
+        .search-btn {
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #6C8CFF, #8A6CFF);
+            border: none;
+            border-radius: 30px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(108, 140, 255, 0.3);
+        }
+
+        .clear-btn {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            color: #fff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
         /* Tabla de registros */
         .tabla-container {
-            padding: 24px;
+            padding: 0 24px 24px 24px;
         }
 
         .registros-table {
@@ -513,6 +634,9 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             border-bottom: 2px solid rgba(108, 140, 255, 0.3);
+            position: sticky;
+            top: 0;
+            backdrop-filter: blur(10px);
         }
 
         .registros-table td {
@@ -546,6 +670,14 @@
             padding: 40px !important;
             color: rgba(255, 255, 255, 0.4);
             font-style: italic;
+        }
+
+        .search-stats {
+            padding: 12px 24px;
+            background: rgba(108, 140, 255, 0.1);
+            color: #6C8CFF;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         /* ===== FOOTER ACTUALIZADO CON INTEGRANTES ===== */
@@ -631,6 +763,16 @@
             .registros-table th,
             .registros-table td {
                 padding: 10px 6px;
+            }
+            .search-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .date-range {
+                flex-direction: column;
+            }
+            .date-input {
+                width: 100%;
             }
         }
 
@@ -742,7 +884,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN EXPANDIBLE DE REGISTROS -->
+        <!-- SECCIÓN EXPANDIBLE DE REGISTROS CON BÚSQUEDA -->
         <div class="registros-section">
             <div class="registros-header" onclick="toggleRegistros()">
                 <h2>
@@ -754,6 +896,25 @@
                 </div>
             </div>
             <div class="registros-content" id="registros-content">
+                <!-- Barra de búsqueda y filtros -->
+                <div class="search-bar" onclick="event.stopPropagation()">
+                    <div class="search-input-group">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search by date, temperature or humidity...">
+                    </div>
+                    <div class="date-range">
+                        <input type="text" class="date-input" id="startDate" placeholder="Start date">
+                        <span style="color: #6C8CFF;">→</span>
+                        <input type="text" class="date-input" id="endDate" placeholder="End date">
+                    </div>
+                    <button class="search-btn" onclick="aplicarFiltros()">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <button class="clear-btn" onclick="limpiarFiltros()">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+                
                 <div class="tabla-container">
                     <table class="registros-table" id="tabla-registros">
                         <thead>
@@ -770,6 +931,9 @@
                             </tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="search-stats" id="search-stats">
+                    <i class="fas fa-info-circle"></i> <span id="stats-text">Showing all records</span>
                 </div>
             </div>
         </div>
@@ -819,12 +983,97 @@
         let chartTemp, chartHum;
         let lecturasGlobales = [];
         let todasLasLecturas = []; // Para la tabla de registros
+        let lecturasFiltradas = []; // Para búsqueda
         let periodoActual = 24;
         let nombrePeriodoActual = 'HOY';
 
         // Referencias
         const overlayTemp = document.getElementById('overlay-temp');
         const overlayHum = document.getElementById('overlay-hum');
+
+        // Inicializar Flatpickr para fechas
+        let startDatePicker, endDatePicker;
+
+        // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X SEGÚN CANTIDAD DE DATOS =====
+        function generarEtiquetasInteligentes() {
+            if (lecturasGlobales.length === 0) return [];
+
+            const cantidad = lecturasGlobales.length;
+            
+            return lecturasGlobales.map((l, index) => {
+                const fecha = new Date(l.timestamp * 1000);
+                
+                // Para período de 12 horas (o menos)
+                if (periodoActual <= 12) {
+                    // Mostrar hora:minuto para todos, pero si hay muchos datos (>15), mostrar cada 2
+                    if (cantidad > 15) {
+                        // Mostrar etiqueta cada 2 puntos para no saturar
+                        if (index % 2 === 0) {
+                            return fecha.toLocaleTimeString('es-MX', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: false 
+                            });
+                        } else {
+                            return ''; // Etiqueta vacía para puntos intermedios
+                        }
+                    } else {
+                        return fecha.toLocaleTimeString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    }
+                }
+                // Para período de 24 horas
+                else if (periodoActual <= 24) {
+                    if (cantidad > 20) {
+                        // Mostrar aproximadamente 8-10 etiquetas
+                        const paso = Math.ceil(cantidad / 8);
+                        if (index % paso === 0 || index === 0 || index === cantidad - 1) {
+                            return fecha.toLocaleTimeString('es-MX', { 
+                                hour: '2-digit', 
+                                minute: '2-digit',
+                                hour12: false 
+                            });
+                        } else {
+                            return '';
+                        }
+                    } else {
+                        return fecha.toLocaleTimeString('es-MX', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false 
+                        });
+                    }
+                }
+                else { // Semana
+                    if (cantidad > 30) {
+                        // Mostrar solo días y alguna hora representativa
+                        if (index % 4 === 0) { // Cada 4 puntos (aprox cada 2 horas)
+                            return fecha.toLocaleString('es-MX', { 
+                                weekday: 'short',
+                                hour: '2-digit'
+                            });
+                        } else if (index === 0 || index === cantidad - 1) {
+                            return fecha.toLocaleString('es-MX', { 
+                                weekday: 'short',
+                                day: 'numeric',
+                                hour: '2-digit'
+                            });
+                        } else {
+                            return '';
+                        }
+                    } else {
+                        return fecha.toLocaleString('es-MX', { 
+                            weekday: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                }
+            });
+        }
 
         // ===== FUNCIÓN PARA EXPANDIR/CONTRAER REGISTROS =====
         function toggleRegistros() {
@@ -868,31 +1117,120 @@
                     .filter(l => l.timestamp > 100000)
                     .sort((a, b) => b.timestamp - a.timestamp); // Más recientes primero
 
+                lecturasFiltradas = [...todasLasLecturas];
                 actualizarTablaRegistros();
+                actualizarTotalRegistros();
+                inicializarDatePickers();
             });
+        }
+
+        // ===== INICIALIZAR SELECTORES DE FECHA =====
+        function inicializarDatePickers() {
+            if (todasLasLecturas.length === 0) return;
+            
+            const fechas = todasLasLecturas.map(l => l.timestamp * 1000);
+            const minDate = Math.min(...fechas);
+            const maxDate = Math.max(...fechas);
+
+            startDatePicker = flatpickr("#startDate", {
+                locale: 'es',
+                dateFormat: "Y-m-d",
+                maxDate: new Date(maxDate),
+                onChange: function() {
+                    aplicarFiltros();
+                }
+            });
+
+            endDatePicker = flatpickr("#endDate", {
+                locale: 'es',
+                dateFormat: "Y-m-d",
+                maxDate: new Date(),
+                onChange: function() {
+                    aplicarFiltros();
+                }
+            });
+        }
+
+        // ===== APLICAR FILTROS DE BÚSQUEDA =====
+        function aplicarFiltros() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            lecturasFiltradas = todasLasLecturas.filter(lectura => {
+                const fecha = new Date(lectura.timestamp * 1000);
+                const fechaStr = fecha.toLocaleString('es-MX').toLowerCase();
+                const tempStr = lectura.temperatura?.toString() || '';
+                const humStr = lectura.humedad?.toString() || '';
+                
+                // Filtro por texto
+                let matchesText = true;
+                if (searchText) {
+                    matchesText = fechaStr.includes(searchText) || 
+                                 tempStr.includes(searchText) || 
+                                 humStr.includes(searchText);
+                }
+                
+                // Filtro por rango de fechas
+                let matchesDate = true;
+                if (startDate && endDate) {
+                    const fechaLectura = fecha.getTime();
+                    const start = new Date(startDate).getTime();
+                    const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1); // Hasta fin del día
+                    matchesDate = fechaLectura >= start && fechaLectura <= end;
+                } else if (startDate) {
+                    const fechaLectura = fecha.getTime();
+                    const start = new Date(startDate).getTime();
+                    matchesDate = fechaLectura >= start;
+                } else if (endDate) {
+                    const fechaLectura = fecha.getTime();
+                    const end = new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1);
+                    matchesDate = fechaLectura <= end;
+                }
+                
+                return matchesText && matchesDate;
+            });
+
+            actualizarTablaRegistros();
+            actualizarTotalRegistros();
+        }
+
+        // ===== LIMPIAR FILTROS =====
+        function limpiarFiltros() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            
+            if (startDatePicker) startDatePicker.clear();
+            if (endDatePicker) endDatePicker.clear();
+            
+            lecturasFiltradas = [...todasLasLecturas];
+            actualizarTablaRegistros();
+            actualizarTotalRegistros();
         }
 
         // ===== ACTUALIZAR TABLA DE REGISTROS =====
         function actualizarTablaRegistros() {
             const tbody = document.getElementById('tabla-body');
-            const totalSpan = document.getElementById('total-registros');
+            const statsText = document.getElementById('stats-text');
             
-            if (todasLasLecturas.length === 0) {
+            if (lecturasFiltradas.length === 0) {
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="no-registros">
-                            <i class="fas fa-database"></i> No records found
+                            <i class="fas fa-search"></i> No records match your filters
                         </td>
                     </tr>
                 `;
-                totalSpan.textContent = '0 records';
+                statsText.textContent = 'No records match the filters';
                 return;
             }
 
-            totalSpan.textContent = `${todasLasLecturas.length} records`;
-
             let html = '';
-            todasLasLecturas.slice(0, 50).forEach(lectura => { // Mostrar últimas 50 para no saturar
+            const mostrarHasta = Math.min(lecturasFiltradas.length, 50);
+            
+            for (let i = 0; i < mostrarHasta; i++) {
+                const lectura = lecturasFiltradas[i];
                 const fecha = new Date(lectura.timestamp * 1000);
                 const fechaFormateada = fecha.toLocaleString('es-MX', {
                     year: 'numeric',
@@ -912,19 +1250,31 @@
                         <td style="color: #666; font-family: monospace;">${lectura.timestamp}</td>
                     </tr>
                 `;
-            });
+            }
 
-            if (todasLasLecturas.length > 50) {
+            if (lecturasFiltradas.length > 50) {
                 html += `
                     <tr>
                         <td colspan="4" style="text-align: center; padding: 16px; color: #6C8CFF; background: rgba(108, 140, 255, 0.1);">
-                            <i class="fas fa-ellipsis-h"></i> Showing last 50 of ${todasLasLecturas.length} records
+                            <i class="fas fa-ellipsis-h"></i> Showing first 50 of ${lecturasFiltradas.length} filtered records
                         </td>
                     </tr>
                 `;
             }
 
             tbody.innerHTML = html;
+            
+            if (lecturasFiltradas.length === todasLasLecturas.length) {
+                statsText.textContent = `Showing all ${todasLasLecturas.length} records`;
+            } else {
+                statsText.textContent = `Found ${lecturasFiltradas.length} records matching filters`;
+            }
+        }
+
+        // ===== ACTUALIZAR TOTAL DE REGISTROS =====
+        function actualizarTotalRegistros() {
+            document.getElementById('total-registros').textContent = 
+                `${todasLasLecturas.length} records`;
         }
 
         // ===== FUNCIONES DE FORMATEO =====
@@ -934,7 +1284,7 @@
             return fecha.toLocaleTimeString('es-MX', { 
                 hour: '2-digit', 
                 minute: '2-digit',
-                hour12: false
+                hour12: false 
             });
         }
 
@@ -947,49 +1297,6 @@
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
-            });
-        }
-
-        // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X SEGÚN CANTIDAD DE DATOS =====
-        function generarEtiquetasInteligentes() {
-            if (lecturasGlobales.length === 0) return [];
-
-            const cantidad = lecturasGlobales.length;
-            
-            return lecturasGlobales.map((l, index) => {
-                const fecha = new Date(l.timestamp * 1000);
-                
-                // Si hay muchos datos (> 15), mostrar etiquetas cada cierto intervalo
-                if (cantidad > 20) {
-                    // Mostrar solo algunas etiquetas para no saturar
-                    const paso = Math.ceil(cantidad / 10); // Mostrar aproximadamente 10 etiquetas
-                    if (index % paso !== 0 && index !== 0 && index !== cantidad - 1) {
-                        return ''; // Etiqueta vacía para no mostrar
-                    }
-                }
-
-                // Formato según período
-                if (periodoActual <= 24) { // 6h, 12h, 24h
-                    return fecha.toLocaleTimeString('es-MX', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false 
-                    });
-                } else { // Semana
-                    if (cantidad > 30) {
-                        // Mostrar solo días
-                        return fecha.toLocaleDateString('es-MX', { 
-                            weekday: 'short',
-                            day: 'numeric'
-                        });
-                    } else {
-                        return fecha.toLocaleString('es-MX', { 
-                            weekday: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                        });
-                    }
-                }
             });
         }
 
@@ -1038,6 +1345,8 @@
             periodoActual = horas;
             if (nombreBtn) nombrePeriodoActual = nombreBtn;
 
+            console.log(`Cargando período de ${horas} horas (${nombreBtn})`); // Debug
+
             // Actualizar botón activo
             document.querySelectorAll('.period-btn').forEach(btn => {
                 btn.classList.remove('active');
@@ -1054,11 +1363,14 @@
             const limiteMs = horas * 60 * 60 * 1000;
             const tiempoLimite = Date.now() - limiteMs;
             
+            console.log('Tiempo límite:', new Date(tiempoLimite).toLocaleString()); // Debug
+            
             historialRef.once('value', (snapshot) => {
                 const data = snapshot.val();
                 
                 // Si no hay datos en Firebase
                 if (!data) {
+                    console.log('No hay datos en Firebase'); // Debug
                     limpiarGraficas();
                     mostrarOverlays(true);
                     return;
@@ -1072,6 +1384,14 @@
                     }))
                     .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
                     .sort((a, b) => a.timestamp - b.timestamp);
+
+                console.log(`Encontradas ${lecturasGlobales.length} lecturas para ${horas} horas`); // Debug
+                
+                // Mostrar primera y última lectura para verificar
+                if (lecturasGlobales.length > 0) {
+                    console.log('Primera lectura:', new Date(lecturasGlobales[0].timestamp * 1000).toLocaleString());
+                    console.log('Última lectura:', new Date(lecturasGlobales[lecturasGlobales.length - 1].timestamp * 1000).toLocaleString());
+                }
 
                 // Si no hay suficientes datos para el período seleccionado
                 if (lecturasGlobales.length === 0) {
@@ -1115,19 +1435,29 @@
                 },
                 scales: {
                     x: { 
-                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        grid: { 
+                            color: 'rgba(255,255,255,0.1)',
+                            display: true 
+                        },
                         ticks: { 
                             color: '#aaa', 
                             maxRotation: 45, 
                             minRotation: 45,
                             autoSkip: true,
-                            maxTicksLimit: 12 // Limitar número máximo de etiquetas
+                            maxTicksLimit: periodoActual <= 12 ? 8 : 12, // Menos etiquetas para 12h
+                            autoSkipPadding: 10
                         }
                     },
                     y: { 
                         grid: { color: 'rgba(255,255,255,0.1)' },
                         ticks: { color: '#aaa' },
                         beginAtZero: false
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 3,
+                        hoverRadius: 5
                     }
                 }
             };
@@ -1226,6 +1556,9 @@
             cargarTodosLosRegistros();
             // Actualizar cada hora
             setInterval(() => cargarHistorial(periodoActual, nombrePeriodoActual), 3600000);
+            
+            // Event listener para búsqueda en tiempo real
+            document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
         };
     </script>
 </body>
