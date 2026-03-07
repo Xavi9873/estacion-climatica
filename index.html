@@ -995,28 +995,39 @@
 
         // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X =====
         function generarEtiquetasGrafica() {
-            if (lecturasGlobales.length === 0) return [];
+            if (lecturasGlobales.length === 0) return { etiquetas: [], temperaturas: [], humedades: [] };
 
-            if (periodoActual === 24) { // TODAY - Máximo 24 puntos equitativos
+            if (periodoActual === 24) { // TODAY - 21 puntos equitativos
                 const totalPuntos = lecturasGlobales.length;
-                const paso = Math.ceil(totalPuntos / 24); // Dividir en 24 segmentos
+                const paso = Math.ceil(totalPuntos / 21); // Dividir en 21 segmentos
                 
-                return lecturasGlobales.map((l, index) => {
-                    const fecha = new Date(l.timestamp * 1000);
+                const etiquetas = [];
+                const temperaturas = [];
+                const humedades = [];
+                
+                lecturasGlobales.forEach((lectura, index) => {
+                    const fecha = new Date(lectura.timestamp * 1000);
                     
-                    // Mostrar etiqueta cada 'paso' puntos
+                    // Incluir punto si está en los índices seleccionados
                     if (index % paso === 0 || index === totalPuntos - 1) {
-                        return fecha.toLocaleString('es-MX', { 
+                        etiquetas.push(fecha.toLocaleString('es-MX', { 
                             day: '2-digit',
                             month: '2-digit',
                             hour: '2-digit', 
                             minute: '2-digit',
                             hour12: false 
-                        });
+                        }));
+                        temperaturas.push(lectura.temperatura);
+                        humedades.push(lectura.humedad);
                     } else {
-                        return ''; // Etiqueta vacía para no saturar
+                        // Para mantener la línea continua, incluimos el punto sin etiqueta
+                        etiquetas.push('');
+                        temperaturas.push(lectura.temperatura);
+                        humedades.push(lectura.humedad);
                     }
                 });
+                
+                return { etiquetas, temperaturas, humedades };
             }
             else if (periodoActual === 168) { // WEEK - 21 puntos (3 por día)
                 // Crear estructura para 7 días × 3 horarios (9am, 3pm, 9pm)
@@ -1068,7 +1079,7 @@
                 return { etiquetas, temperaturas, humedades };
             }
             else { // 6h y 12h - Mostrar todos los puntos
-                return lecturasGlobales.map(l => {
+                const etiquetas = lecturasGlobales.map(l => {
                     const fecha = new Date(l.timestamp * 1000);
                     return fecha.toLocaleString('es-MX', { 
                         hour: '2-digit', 
@@ -1076,6 +1087,12 @@
                         hour12: false 
                     });
                 });
+                
+                return { 
+                    etiquetas, 
+                    temperaturas: lecturasGlobales.map(l => l.temperatura),
+                    humedades: lecturasGlobales.map(l => l.humedad)
+                };
             }
         }
 
@@ -1316,6 +1333,7 @@
                 chartHum = null;
             }
             
+            // Limpiar los promedios
             document.getElementById('prom-temp').innerHTML = '--<span class="stat-unit">°C</span>';
             document.getElementById('prom-hum').innerHTML = '--<span class="stat-unit">%</span>';
         }
@@ -1377,7 +1395,7 @@
                 } else {
                     mostrarOverlays(false);
                     actualizarGraficas();
-                    actualizarPromedios();
+                    actualizarPromedios(); // <-- AHORA SÍ SE LLAMA CORRECTAMENTE
                 }
             });
         }
@@ -1386,20 +1404,10 @@
         function actualizarGraficas() {
             if (lecturasGlobales.length === 0) return;
 
-            let etiquetas, temperaturas, humedades;
-
-            if (periodoActual === 168) {
-                // Para semana, usar estructura especial
-                const datosSemana = generarEtiquetasGrafica();
-                etiquetas = datosSemana.etiquetas;
-                temperaturas = datosSemana.temperaturas;
-                humedades = datosSemana.humedades;
-            } else {
-                // Para otros períodos, usar método normal
-                etiquetas = generarEtiquetasGrafica();
-                temperaturas = lecturasGlobales.map(l => l.temperatura);
-                humedades = lecturasGlobales.map(l => l.humedad);
-            }
+            const datosGrafica = generarEtiquetasGrafica();
+            const etiquetas = datosGrafica.etiquetas;
+            const temperaturas = datosGrafica.temperaturas;
+            const humedades = datosGrafica.humedades;
 
             const opcionesBase = {
                 responsive: true,
@@ -1412,7 +1420,7 @@
                         bodyColor: '#ddd',
                         callbacks: {
                             label: (context) => {
-                                return `${context.raw?.toFixed(1) || '--'} (${etiquetas[context.dataIndex]})`;
+                                return `${context.raw?.toFixed(1) || '--'} °C`;
                             }
                         }
                     }
@@ -1424,8 +1432,8 @@
                             color: '#aaa', 
                             maxRotation: 45, 
                             minRotation: 45,
-                            autoSkip: false,
-                            maxTicksLimit: periodoActual === 24 ? 24 : 100
+                            autoSkip: true,
+                            maxTicksLimit: 21
                         }
                     },
                     y: { 
@@ -1460,7 +1468,7 @@
                         pointHoverRadius: 6,
                         tension: 0.3,
                         fill: true,
-                        spanGaps: true // Para saltar puntos null
+                        spanGaps: true
                     }]
                 },
                 options: opcionesBase
