@@ -1025,47 +1025,64 @@ function generarEtiquetasGrafica() {
         
         return { etiquetas, temperaturas, humedades };
     }
-    else if (periodoActual === 168) { // WEEK - Usar los datos reales
-        // Si hay pocos datos, mostrarlos todos
-        if (lecturasGlobales.length <= 21) {
-            const etiquetas = lecturasGlobales.map(l => {
-                const fecha = new Date(l.timestamp * 1000);
-                return fecha.toLocaleString('es-MX', { 
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-            });
-            
-            return { 
-                etiquetas, 
-                temperaturas: lecturasGlobales.map(l => l.temperatura),
-                humedades: lecturasGlobales.map(l => l.humedad)
-            };
-        }
+    else if (periodoActual === 168) { // WEEK - 21 puntos fijos (3 por día)
+        // Crear estructura para 7 días × 3 horarios (9am, 3pm, 9pm)
+        const ahora = new Date();
+        const inicioSemana = new Date(ahora);
+        inicioSemana.setDate(ahora.getDate() - 7); // 7 días atrás
+        inicioSemana.setHours(0, 0, 0, 0);
         
-        // Si hay muchos datos, tomar una muestra representativa
-        const paso = Math.ceil(lecturasGlobales.length / 21);
         const etiquetas = [];
         const temperaturas = [];
         const humedades = [];
         
-        lecturasGlobales.forEach((lectura, index) => {
-            if (index % paso === 0 || index === lecturasGlobales.length - 1) {
-                const fecha = new Date(lectura.timestamp * 1000);
-                etiquetas.push(fecha.toLocaleString('es-MX', { 
-                    weekday: 'short',
-                    day: 'numeric',
-                    month: 'short',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }));
-                temperaturas.push(lectura.temperatura);
-                humedades.push(lectura.humedad);
-            }
-        });
+        // Generar los 21 puntos esperados
+        for (let dia = 0; dia < 7; dia++) {
+            const fechaDia = new Date(inicioSemana);
+            fechaDia.setDate(inicioSemana.getDate() + dia);
+            
+            // Horarios: 9am, 3pm, 9pm
+            const horarios = [9, 15, 21];
+            
+            horarios.forEach(horas => {
+                const fechaTarget = new Date(fechaDia);
+                fechaTarget.setHours(horas, 0, 0, 0);
+                const timestampTarget = fechaTarget.getTime() / 1000;
+                
+                // Buscar la lectura más cercana a este horario
+                let lecturaCercana = null;
+                let menorDiferencia = Infinity;
+                
+                lecturasGlobales.forEach(lectura => {
+                    const diferencia = Math.abs(lectura.timestamp - timestampTarget);
+                    // Buscar la más cercana sin límite de tiempo
+                    if (diferencia < menorDiferencia) {
+                        menorDiferencia = diferencia;
+                        lecturaCercana = lectura;
+                    }
+                });
+                
+                // Formatear etiqueta
+                const fecha = new Date(timestampTarget * 1000);
+                const diaSemana = fecha.toLocaleDateString('es-MX', { weekday: 'short' });
+                const horaStr = horas.toString().padStart(2, '0') + ':00';
+                
+                etiquetas.push(`${diaSemana} ${horaStr}`);
+                
+                // Si encontramos una lectura cercana, usamos sus valores
+                if (lecturaCercana) {
+                    temperaturas.push(lecturaCercana.temperatura);
+                    humedades.push(lecturaCercana.humedad);
+                    
+                    // Log para depuración (opcional, puedes quitarlo)
+                    console.log(`Punto ${diaSemana} ${horaStr}: Usando dato del ${new Date(lecturaCercana.timestamp * 1000).toLocaleString()} (diferencia: ${menorDiferencia/3600} horas)`);
+                } else {
+                    // Si no hay ninguna lectura, poner null (la gráfica no mostrará punto)
+                    temperaturas.push(null);
+                    humedades.push(null);
+                }
+            });
+        }
         
         return { etiquetas, temperaturas, humedades };
     }
@@ -1542,4 +1559,5 @@ function cargarHistorial(horas, nombreBtn = null) {
     </script>
 </body>
 </html>
+
 
