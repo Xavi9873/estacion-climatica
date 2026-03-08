@@ -993,108 +993,99 @@
         // Inicializar Flatpickr
         let startDatePicker, endDatePicker;
 
-        // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X =====
-        function generarEtiquetasGrafica() {
-            if (lecturasGlobales.length === 0) return { etiquetas: [], temperaturas: [], humedades: [] };
+       // ===== FUNCIÓN PARA GENERAR ETIQUETAS DEL EJE X =====
+function generarEtiquetasGrafica() {
+    if (lecturasGlobales.length === 0) return { etiquetas: [], temperaturas: [], humedades: [] };
 
-            if (periodoActual === 24) { // TODAY - 21 puntos equitativos
-                const totalPuntos = lecturasGlobales.length;
-                const paso = Math.ceil(totalPuntos / 21); // Dividir en 21 segmentos
-                
-                const etiquetas = [];
-                const temperaturas = [];
-                const humedades = [];
-                
-                lecturasGlobales.forEach((lectura, index) => {
-                    const fecha = new Date(lectura.timestamp * 1000);
-                    
-                    // Incluir punto si está en los índices seleccionados
-                    if (index % paso === 0 || index === totalPuntos - 1) {
-                        etiquetas.push(fecha.toLocaleString('es-MX', { 
-                            day: '2-digit',
-                            month: '2-digit',
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: false 
-                        }));
-                        temperaturas.push(lectura.temperatura);
-                        humedades.push(lectura.humedad);
-                    } else {
-                        // Para mantener la línea continua, incluimos el punto sin etiqueta
-                        etiquetas.push('');
-                        temperaturas.push(lectura.temperatura);
-                        humedades.push(lectura.humedad);
-                    }
+    if (periodoActual === 24) { // TODAY - 21 puntos equitativos
+        const totalPuntos = lecturasGlobales.length;
+        const paso = Math.ceil(totalPuntos / 21);
+        
+        const etiquetas = [];
+        const temperaturas = [];
+        const humedades = [];
+        
+        lecturasGlobales.forEach((lectura, index) => {
+            const fecha = new Date(lectura.timestamp * 1000);
+            
+            if (index % paso === 0 || index === totalPuntos - 1) {
+                etiquetas.push(fecha.toLocaleString('es-MX', { 
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                }));
+            } else {
+                etiquetas.push('');
+            }
+            temperaturas.push(lectura.temperatura);
+            humedades.push(lectura.humedad);
+        });
+        
+        return { etiquetas, temperaturas, humedades };
+    }
+    else if (periodoActual === 168) { // WEEK - Usar los datos reales
+        // Si hay pocos datos, mostrarlos todos
+        if (lecturasGlobales.length <= 21) {
+            const etiquetas = lecturasGlobales.map(l => {
+                const fecha = new Date(l.timestamp * 1000);
+                return fecha.toLocaleString('es-MX', { 
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
-                
-                return { etiquetas, temperaturas, humedades };
-            }
-            else if (periodoActual === 168) { // WEEK - 21 puntos (3 por día)
-                // Crear estructura para 7 días × 3 horarios (9am, 3pm, 9pm)
-                const ahora = new Date();
-                const inicioSemana = new Date(ahora);
-                inicioSemana.setDate(ahora.getDate() - 7); // 7 días atrás
-                inicioSemana.setHours(0, 0, 0, 0);
-                
-                const etiquetas = [];
-                const temperaturas = [];
-                const humedades = [];
-                
-                // Generar los 21 puntos esperados
-                for (let dia = 0; dia < 7; dia++) {
-                    const fechaDia = new Date(inicioSemana);
-                    fechaDia.setDate(inicioSemana.getDate() + dia);
-                    
-                    // Horarios: 9am, 3pm, 9pm
-                    const horarios = [9, 15, 21];
-                    
-                    horarios.forEach(horas => {
-                        const fechaTarget = new Date(fechaDia);
-                        fechaTarget.setHours(horas, 0, 0, 0);
-                        const timestampTarget = fechaTarget.getTime() / 1000;
-                        
-                        // Buscar la lectura más cercana a este horario
-                        let lecturaCercana = null;
-                        let menorDiferencia = Infinity;
-                        
-                        lecturasGlobales.forEach(lectura => {
-                            const diferencia = Math.abs(lectura.timestamp - timestampTarget);
-                            if (diferencia < menorDiferencia && diferencia < 7200) { // Máximo 2 horas de diferencia
-                                menorDiferencia = diferencia;
-                                lecturaCercana = lectura;
-                            }
-                        });
-                        
-                        // Formatear etiqueta
-                        const fecha = new Date(timestampTarget * 1000);
-                        const diaSemana = fecha.toLocaleDateString('es-MX', { weekday: 'short' });
-                        const horaStr = horas.toString().padStart(2, '0') + ':00';
-                        
-                        etiquetas.push(`${diaSemana} ${horaStr}`);
-                        temperaturas.push(lecturaCercana ? lecturaCercana.temperatura : null);
-                        humedades.push(lecturaCercana ? lecturaCercana.humedad : null);
-                    });
-                }
-                
-                return { etiquetas, temperaturas, humedades };
-            }
-            else { // 6h y 12h - Mostrar todos los puntos
-                const etiquetas = lecturasGlobales.map(l => {
-                    const fecha = new Date(l.timestamp * 1000);
-                    return fecha.toLocaleString('es-MX', { 
-                        hour: '2-digit', 
-                        minute: '2-digit',
-                        hour12: false 
-                    });
-                });
-                
-                return { 
-                    etiquetas, 
-                    temperaturas: lecturasGlobales.map(l => l.temperatura),
-                    humedades: lecturasGlobales.map(l => l.humedad)
-                };
-            }
+            });
+            
+            return { 
+                etiquetas, 
+                temperaturas: lecturasGlobales.map(l => l.temperatura),
+                humedades: lecturasGlobales.map(l => l.humedad)
+            };
         }
+        
+        // Si hay muchos datos, tomar una muestra representativa
+        const paso = Math.ceil(lecturasGlobales.length / 21);
+        const etiquetas = [];
+        const temperaturas = [];
+        const humedades = [];
+        
+        lecturasGlobales.forEach((lectura, index) => {
+            if (index % paso === 0 || index === lecturasGlobales.length - 1) {
+                const fecha = new Date(lectura.timestamp * 1000);
+                etiquetas.push(fecha.toLocaleString('es-MX', { 
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }));
+                temperaturas.push(lectura.temperatura);
+                humedades.push(lectura.humedad);
+            }
+        });
+        
+        return { etiquetas, temperaturas, humedades };
+    }
+    else { // 6h y 12h - Mostrar todos los puntos
+        const etiquetas = lecturasGlobales.map(l => {
+            const fecha = new Date(l.timestamp * 1000);
+            return fecha.toLocaleTimeString('es-MX', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+        });
+        
+        return { 
+            etiquetas, 
+            temperaturas: lecturasGlobales.map(l => l.temperatura),
+            humedades: lecturasGlobales.map(l => l.humedad)
+        };
+    }
+}
 
         // ===== FUNCIÓN PARA EXPANDIR/CONTRAER REGISTROS =====
         function toggleRegistros() {
@@ -1351,54 +1342,58 @@
             }
         });
 
-        // ===== CARGAR HISTORIAL CON FILTRO DE HORAS =====
-        function cargarHistorial(horas, nombreBtn = null) {
-            periodoActual = horas;
-            if (nombreBtn) nombrePeriodoActual = nombreBtn;
+       // ===== CARGAR HISTORIAL CON FILTRO DE HORAS =====
+function cargarHistorial(horas, nombreBtn = null) {
+    periodoActual = horas;
+    if (nombreBtn) nombrePeriodoActual = nombreBtn;
 
-            document.querySelectorAll('.period-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.textContent.includes(nombreBtn) || 
-                    (horas === 24 && btn.textContent.includes('HOY')) ||
-                    (horas === 168 && btn.textContent.includes('SEMANA')) ||
-                    (horas === 6 && btn.textContent.includes('6 HORAS')) ||
-                    (horas === 12 && btn.textContent.includes('12 HORAS'))) {
-                    btn.classList.add('active');
-                }
-            });
-
-            const historialRef = database.ref('/lecturas');
-            const limiteMs = horas * 60 * 60 * 1000;
-            const tiempoLimite = Date.now() - limiteMs;
-            
-            historialRef.once('value', (snapshot) => {
-                const data = snapshot.val();
-                
-                if (!data) {
-                    limpiarGraficas();
-                    mostrarOverlays(true);
-                    return;
-                }
-
-                lecturasGlobales = Object.entries(data)
-                    .map(([key, value]) => ({
-                        ...value,
-                        id: key,
-                        timestampMs: value.timestamp * 1000
-                    }))
-                    .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
-                    .sort((a, b) => a.timestamp - b.timestamp);
-
-                if (lecturasGlobales.length === 0) {
-                    limpiarGraficas();
-                    mostrarOverlays(true);
-                } else {
-                    mostrarOverlays(false);
-                    actualizarGraficas();
-                    actualizarPromedios(); // <-- AHORA SÍ SE LLAMA CORRECTAMENTE
-                }
-            });
+    document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.textContent.includes(nombreBtn) || 
+            (horas === 24 && btn.textContent.includes('HOY')) ||
+            (horas === 168 && btn.textContent.includes('SEMANA')) ||
+            (horas === 6 && btn.textContent.includes('6 HORAS')) ||
+            (horas === 12 && btn.textContent.includes('12 HORAS'))) {
+            btn.classList.add('active');
         }
+    });
+
+    const historialRef = database.ref('/lecturas');
+    const limiteMs = horas * 60 * 60 * 1000;
+    const tiempoLimite = Date.now() - limiteMs;
+    
+    console.log(`Cargando período: ${horas} horas, desde: ${new Date(tiempoLimite).toLocaleString()}`);
+    
+    historialRef.once('value', (snapshot) => {
+        const data = snapshot.val();
+        
+        if (!data) {
+            limpiarGraficas();
+            mostrarOverlays(true);
+            return;
+        }
+
+        lecturasGlobales = Object.entries(data)
+            .map(([key, value]) => ({
+                ...value,
+                id: key,
+                timestampMs: value.timestamp * 1000
+            }))
+            .filter(l => l.timestamp > 100000 && l.timestampMs > tiempoLimite)
+            .sort((a, b) => a.timestamp - b.timestamp);
+
+        console.log(`Encontradas ${lecturasGlobales.length} lecturas para este período`);
+
+        if (lecturasGlobales.length === 0) {
+            limpiarGraficas();
+            mostrarOverlays(true);
+        } else {
+            mostrarOverlays(false);
+            actualizarGraficas();
+            actualizarPromedios();
+        }
+    });
+}
 
         // ===== ACTUALIZAR GRÁFICAS =====
         function actualizarGraficas() {
@@ -1547,3 +1542,4 @@
     </script>
 </body>
 </html>
+
